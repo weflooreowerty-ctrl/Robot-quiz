@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz to Protect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+  :root{
+    --bg-dusk-1:#0F1729;
+    --bg-dusk-2:#1B2A4A;
+    --gold:#F2B441;
+    --gold-dim:#8a6a2e;
+    --danger:#E5484D;
+    --danger-dim:#7a2225;
+    --safe:#46C98A;
+    --concrete:#5b6478;
+    --paper:#FBF6EA;
+    --ink:#1B2430;
+    --ink-soft:#4a5266;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Sarabun', sans-serif;
+    background:radial-gradient(ellipse at 50% 0%, #24345c 0%, var(--bg-dusk-1) 65%);
+    color:var(--paper);
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+  .kanit{ font-family:'Kanit', sans-serif; }
+  button{ font-family:'Sarabun', sans-serif; cursor:pointer; border:none; }
+  .screen{ display:none; width:100%; min-height:100vh; flex-direction:column; align-items:center; }
+  .screen.active{ display:flex; }
+
+  /* ---------- STARFIELD ---------- */
+  .stars{ position:fixed; inset:0; overflow:hidden; z-index:0; pointer-events:none;}
+  .star{ position:absolute; width:2px; height:2px; background:#fff; border-radius:50%; opacity:.5; animation:twinkle 3s ease-in-out infinite;}
+  @keyframes twinkle{ 0%,100%{opacity:.15;} 50%{opacity:.9;} }
+
+  /* ---------- START SCREEN ---------- */
+  #screen-start{ justify-content:center; padding:32px 16px; position:relative; z-index:1;}
+  .start-wrap{ max-width:640px; width:100%; text-align:center; }
+  .skyline{
+    position:relative; height:150px; margin-bottom:6px;
+    display:flex; align-items:flex-end; justify-content:center; gap:4px;
+  }
+  .bldg{ background:linear-gradient(180deg,#2b3a5e,#182444); border-top:3px solid #3a4a72; opacity:.85; position:relative; }
+  .bldg.broken{ clip-path:polygon(0 30%,20% 0,45% 22%,60% 5%,100% 25%,100% 100%,0 100%); }
+  .eyes{
+    position:absolute; top:20px; left:50%; transform:translateX(-50%);
+    display:flex; gap:14px; z-index:2;
+  }
+  .eye{ width:10px; height:10px; border-radius:50%; background:var(--danger); box-shadow:0 0 12px 4px var(--danger); animation:eyeGlow 2.2s ease-in-out infinite;}
+  @keyframes eyeGlow{ 0%,100%{opacity:.5; box-shadow:0 0 6px 2px var(--danger);} 50%{opacity:1; box-shadow:0 0 18px 6px var(--danger);} }
+
+  .title-badge{
+    display:inline-block; font-size:13px; letter-spacing:3px; color:var(--gold);
+    border:1px solid var(--gold-dim); padding:4px 14px; border-radius:20px;
+    text-transform:uppercase; margin-bottom:14px; background:rgba(242,180,65,.08);
+  }
+  h1.game-title{
+    font-size:clamp(38px,9vw,64px); font-weight:800; line-height:1;
+    background:linear-gradient(180deg,#fff 10%, var(--gold) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 4px 30px rgba(242,180,65,.25);
+    letter-spacing:1px;
+  }
+  .subtitle{ margin-top:10px; color:#c7cfe6; font-size:16px; line-height:1.6; }
+
+  .level-picker{ margin-top:34px; display:flex; flex-direction:column; gap:12px; align-items:center; }
+  .level-picker .label{ font-size:13px; color:#9aa5c4; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px;}
+  .level-row{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+  .level-btn{
+    padding:16px 26px; border-radius:14px; background:rgba(255,255,255,.04);
+    border:1.5px solid #37456b; color:#dfe4f5; font-size:17px; font-weight:600;
+    transition:.2s; min-width:170px;
+  }
+  .level-btn:hover{ border-color:var(--gold); transform:translateY(-2px); }
+  .level-btn.selected{ background:linear-gradient(135deg,#F2B441,#d99a2b); color:#241a05; border-color:var(--gold); box-shadow:0 6px 22px rgba(242,180,65,.35); }
+  .level-btn small{ display:block; font-weight:400; font-size:12.5px; opacity:.8; margin-top:3px; }
+
+  .start-btn{
+    margin-top:26px; padding:16px 48px; border-radius:14px; font-size:19px; font-weight:700;
+    background:linear-gradient(135deg,var(--danger),#a92e32); color:#fff;
+    box-shadow:0 8px 26px rgba(229,72,77,.4); transition:.2s; opacity:.4; pointer-events:none;
+    letter-spacing:1px;
+  }
+  .start-btn.ready{ opacity:1; pointer-events:auto; }
+  .start-btn.ready:hover{ transform:translateY(-3px) scale(1.02); box-shadow:0 12px 32px rgba(229,72,77,.55); }
+
+  /* ---------- GAME SCREEN ---------- */
+  #screen-game{ padding:14px 14px 30px; position:relative; z-index:1; }
+  .hud{
+    width:100%; max-width:920px; display:flex; flex-direction:column; gap:8px; margin-bottom:14px;
+  }
+  .hud-top{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;}
+  .hud-title{ font-size:15px; font-weight:700; letter-spacing:1px; color:var(--gold);}
+  .stat-chips{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{ font-size:12.5px; padding:5px 11px; border-radius:20px; background:rgba(255,255,255,.06); border:1px solid #33406a; color:#c9d1ec; }
+  .chip.speed{ border-color:var(--danger-dim); color:#ffb0b3; }
+  .chip.streak{ border-color:#2e6b4f; color:#8de3b8; }
+
+  .proximity-bar-wrap{ width:100%; max-width:920px; }
+  .proximity-label{ display:flex; justify-content:space-between; font-size:12px; color:#9aa5c4; margin-bottom:4px; }
+  .proximity-track{ height:12px; border-radius:8px; background:#1a2340; border:1px solid #303f6e; overflow:hidden; position:relative;}
+  .proximity-fill{ height:100%; border-radius:8px; background:linear-gradient(90deg,var(--safe),var(--gold) 60%, var(--danger)); transition:width .5s cubic-bezier(.4,0,.2,1); width:50%;}
+
+  /* SCENE */
+  .scene-wrap{ width:100%; max-width:920px; border-radius:18px; overflow:hidden; border:1px solid #2c3a63; box-shadow:0 20px 50px rgba(0,0,0,.4); margin-top:10px;}
+  .scene{
+    position:relative; height:230px; width:100%;
+    background:linear-gradient(180deg,#1a2647 0%, #101a33 55%, #0c1428 100%);
+    overflow:hidden;
+  }
+  .scene.shake{ animation:shake .4s; }
+  @keyframes shake{ 0%,100%{transform:translateX(0);} 20%{transform:translateX(-8px) rotate(-.4deg);} 40%{transform:translateX(7px) rotate(.3deg);} 60%{transform:translateX(-5px);} 80%{transform:translateX(4px);} }
+
+  .ground{ position:absolute; bottom:0; left:0; width:100%; height:56px; background:linear-gradient(180deg,#333c52,#20263a); border-top:2px solid #454f6c;}
+  .road-line{ position:absolute; bottom:26px; left:0; width:200%; height:3px; background:repeating-linear-gradient(90deg,#7d8bb5 0 26px, transparent 26px 52px); animation:roadMove 1.4s linear infinite; opacity:.5;}
+  @keyframes roadMove{ from{transform:translateX(0);} to{transform:translateX(-52px);} }
+
+  .ruin{ position:absolute; bottom:56px; }
+  .ruin svg{ display:block; }
+
+  .school{ position:absolute; right:2%; bottom:56px; display:flex; align-items:flex-end; z-index:3;}
+  .npc{ position:absolute; bottom:56px; z-index:4; animation:npcBob 1.6s ease-in-out infinite; }
+  @keyframes npcBob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-2px);} }
+
+  .robot{ position:absolute; bottom:56px; left:-22%; transition:left 1.6s cubic-bezier(.45,.05,.35,1); z-index:5; }
+  .robot.entering{ transition:left 3.2s cubic-bezier(.3,.05,.25,1); }
+  .robot-inner{ transform-origin:bottom center; animation:idleWalk 1s ease-in-out infinite; }
+  .robot-inner.stomp{ animation:idleWalk 1s ease-in-out infinite, stomp .5s ease-in-out; }
+  @keyframes idleWalk{ 0%,100%{transform:translateY(0) rotate(0deg);} 25%{transform:translateY(-3px) rotate(-1.2deg);} 75%{transform:translateY(-3px) rotate(1.2deg);} }
+  @keyframes stomp{ 0%,100%{transform:translateY(0) scaleY(1);} 30%{transform:translateY(8px) scaleY(.94);} 60%{transform:translateY(-6px) scaleY(1.03);} }
+  .robot .leg{ animation:legWalk 1s ease-in-out infinite; transform-origin:top center;}
+  .robot .leg.l2{ animation-delay:.5s; }
+  @keyframes legWalk{ 0%,100%{transform:rotate(-6deg);} 50%{transform:rotate(6deg);} }
+  .robot .glow-eye{ animation:eyeGlow 1.6s ease-in-out infinite; }
+  .robot.hit .body-fill{ fill:#fff !important; }
+  .robot-inner{ display:block; }
+  .spark{ position:absolute; z-index:6; font-size:26px; pointer-events:none; animation:sparkPop .6s ease-out forwards; }
+  @keyframes sparkPop{ 0%{opacity:0; transform:scale(.3) translateY(0);} 30%{opacity:1; transform:scale(1.2) translateY(-10px);} 100%{opacity:0; transform:scale(.9) translateY(-40px);} }
+
+  /* SUBJECT PICKER */
+  .panel{ width:100%; max-width:920px; margin-top:16px; }
+  .section-label{ font-size:13px; color:#9aa5c4; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; }
+  .subject-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+  .subject-btn{
+    background:rgba(255,255,255,.04); border:1.5px solid #33406a; border-radius:14px; padding:16px 10px;
+    display:flex; flex-direction:column; align-items:center; gap:6px; color:#dfe4f5; transition:.18s;
+  }
+  .subject-btn .icon{ font-size:26px; }
+  .subject-btn .name{ font-size:14px; font-weight:600; }
+  .subject-btn:hover{ border-color:var(--gold); transform:translateY(-3px); background:rgba(242,180,65,.08);}
+
+  /* QUIZ CARD */
+  .quiz-card{
+    width:100%; background:var(--paper); color:var(--ink); border-radius:18px; padding:22px;
+    box-shadow:0 16px 40px rgba(0,0,0,.35); position:relative; overflow:hidden;
+  }
+  .quiz-card::before{ content:''; position:absolute; top:0; left:0; width:6px; height:100%; background:var(--gold); }
+  .quiz-tag{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; letter-spacing:1px; color:#8a6a2e; background:#f2e2bc; padding:4px 10px; border-radius:20px; margin-bottom:12px;}
+  .quiz-q{ font-size:19px; font-weight:600; line-height:1.5; margin-bottom:18px; }
+  .choices{ display:flex; flex-direction:column; gap:10px; }
+  .choice-btn{
+    text-align:left; padding:13px 16px; border-radius:12px; background:#fff; border:1.5px solid #e3d9c2;
+    font-size:15.5px; color:var(--ink); display:flex; gap:10px; align-items:flex-start; transition:.15s;
+  }
+  .choice-btn .letter{ font-weight:700; color:var(--gold-dim); min-width:20px; }
+  .choice-btn:hover{ border-color:var(--gold); background:#fff8e9; transform:translateX(3px); }
+  .choice-btn.picked{ border-color:var(--gold); background:#fff8e9; box-shadow:0 0 0 2px rgba(242,180,65,.35) inset; }
+  .choice-btn.correct{ background:#e3f7ec; border-color:var(--safe); }
+  .choice-btn.wrong{ background:#fbe7e7; border-color:var(--danger); }
+  .choice-btn[disabled]{ pointer-events:none; opacity:.75; }
+  .choice-btn.picked[disabled]{ opacity:1; }
+
+  .confirm-row{ display:none; gap:10px; margin-top:14px; }
+  .confirm-row.show{ display:flex; }
+  .confirm-row button{ flex:1; padding:12px 14px; border-radius:12px; font-size:15px; font-weight:700; transition:.15s; }
+  .btn-cancel{ background:#fff; border:1.5px solid #e3d9c2; color:var(--ink-soft); }
+  .btn-cancel:hover{ border-color:var(--danger); color:var(--danger); background:#fff5f5; }
+  .btn-confirm{ background:var(--gold); border:1.5px solid var(--gold); color:#241a05; }
+  .btn-confirm:hover{ filter:brightness(1.06); transform:translateY(-1px); }
+
+  .explain-box{ margin-top:12px; padding:12px 14px; border-radius:12px; background:rgba(255,255,255,.4); border:1px dashed #cbb98a; font-size:13.5px; line-height:1.6; color:var(--ink-soft); }
+  .explain-box b{ color:var(--ink); }
+
+  /* CONFIDENCE MODAL */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(8,12,24,.72); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; z-index:50; padding:16px;}
+  .modal-overlay.active{ display:flex; }
+  .modal{ background:var(--paper); color:var(--ink); border-radius:18px; padding:26px; max-width:420px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  .modal h3{ font-family:'Kanit',sans-serif; font-size:20px; margin-bottom:6px; }
+  .modal p{ font-size:14px; color:var(--ink-soft); margin-bottom:18px; }
+  .conf-row{ display:flex; gap:12px; justify-content:center; margin-bottom:6px; }
+  .conf-btn{
+    width:52px; height:52px; border-radius:50%; background:#fff; border:2px solid #e3d9c2; font-weight:700; font-size:16px;
+    color:var(--ink); transition:.15s;
+  }
+  .conf-btn:hover{ transform:scale(1.08); border-color:var(--gold); }
+  .conf-btn.conf-wide{ width:130px; height:84px; border-radius:16px; font-size:15px; line-height:1.5; border-width:2px; }
+  .conf-btn.conf-wide:hover{ transform:translateY(-3px) scale(1.03); background:#fff8e9; }
+  .conf-scale-labels{ display:flex; justify-content:space-between; font-size:11px; color:#9a927e; padding:0 4px; margin-top:2px; }
+
+  /* RESULT OVERLAY */
+  .result-panel{ margin-top:16px; padding:16px 18px; border-radius:14px; font-size:14.5px; line-height:1.6; display:none; }
+  .result-panel.show{ display:block; animation:fadeUp .35s ease; }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  .result-panel.good{ background:rgba(70,201,138,.12); border:1px solid #2e6b4f; }
+  .result-panel.bad{ background:rgba(229,72,77,.12); border:1px solid #7a2225; }
+  .next-btn{ margin-top:14px; padding:12px 30px; border-radius:10px; background:var(--gold); color:#241a05; font-weight:700; font-size:15px; }
+  .next-btn:hover{ filter:brightness(1.08); }
+
+  /* END SCREENS */
+  #screen-end{ justify-content:center; text-align:center; padding:40px 16px; position:relative; z-index:1;}
+  .end-emoji{ font-size:64px; margin-bottom:10px; }
+  .end-title{ font-size:clamp(30px,7vw,46px); font-weight:800; margin-bottom:10px;}
+  .end-title.win{ color:var(--safe); }
+  .end-title.lose{ color:var(--danger); }
+  .end-sub{ color:#c7cfe6; font-size:15px; margin-bottom:26px; max-width:480px; }
+  .end-stats{ display:flex; gap:14px; margin-bottom:26px; flex-wrap:wrap; justify-content:center; }
+  .end-stat{ background:rgba(255,255,255,.05); border:1px solid #33406a; border-radius:12px; padding:12px 20px; min-width:110px; }
+  .end-stat .num{ font-family:'Kanit',sans-serif; font-size:24px; font-weight:700; color:var(--gold); }
+  .end-stat .lbl{ font-size:12px; color:#9aa5c4; margin-top:2px; }
+  .retry-btn{ padding:14px 38px; border-radius:12px; background:linear-gradient(135deg,var(--gold),#d99a2b); color:#241a05; font-weight:700; font-size:16px; }
+  .retry-btn:hover{ transform:translateY(-2px); }
+
+  @media (max-width:600px){
+    .scene{ height:190px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<!-- ================= START SCREEN ================= -->
+<section id="screen-start" class="screen active">
+  <div class="start-wrap">
+    <div class="skyline" id="skyline">
+      <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
+    </div>
+    <div class="title-badge">Defend your school</div>
+    <h1 class="game-title kanit">QUIZ TO PROTECT</h1>
+    <p class="subtitle">หุ่นยนต์ยักษ์กำลังบุกเข้าเมือง มีเพียงความรู้ของคุณเท่านั้นที่จะหยุดมันได้ก่อนถึงรั้วโรงเรียน<br>ตอบถูก = ผลักถอยกลับ · ตอบผิด = มันเดินเร็วขึ้น</p>
+
+    <div class="level-picker">
+      <div class="label">เลือกระดับชั้น</div>
+      <div class="level-row">
+        <button class="level-btn kanit" id="lvl-junior" onclick="selectLevel('junior')">
+          ระดับมัธยมต้น
+          <small>คำถามพื้นฐาน · หุ่นยนต์เดินช้ากว่า</small>
+        </button>
+        <button class="level-btn kanit" id="lvl-senior" onclick="selectLevel('senior')">
+          ระดับมัธยมปลาย
+          <small>คำถามยากขึ้น · หุ่นยนต์เดินเร็วกว่า</small>
+        </button>
+      </div>
+    </div>
+
+    <button class="start-btn kanit" id="btn-start" onclick="startGame()">เริ่มปกป้องโรงเรียน</button>
+  </div>
+</section>
+
+<!-- ================= GAME SCREEN ================= -->
+<section id="screen-game" class="screen">
+  <div class="hud">
+    <div class="hud-top">
+      <div class="hud-title kanit">QUIZ TO PROTECT — <span id="hud-level">มัธยมต้น</span></div>
+      <div class="stat-chips">
+        <div class="chip streak">🔥 ตอบถูกติดกัน: <span id="stat-streak">0</span></div>
+        <div class="chip speed">⚡ ความเร็วหุ่นยนต์: <span id="stat-speed">100%</span></div>
+        <div class="chip">❓ ข้อที่: <span id="stat-qnum">1</span></div>
+        <button class="chip" id="mute-btn" onclick="toggleMute()" style="cursor:pointer;">🔊 เสียง</button>
+      </div>
+    </div>
+    <div class="proximity-bar-wrap">
+      <div class="proximity-label"><span>โรงเรียนปลอดภัย</span><span>หุ่นยนต์ถึงรั้วโรงเรียน</span></div>
+      <div class="proximity-track"><div class="proximity-fill" id="proximity-fill"></div></div>
+    </div>
+  </div>
+
+  <div class="scene-wrap">
+    <div class="scene" id="scene">
+      <!-- ruins -->
+      <div class="ruin" style="left:2%;"></div>
+      <div class="ruin" style="left:18%;"></div>
+      <div class="ruin" style="left:34%;"></div>
+      <div class="road-line"></div>
+      <div class="ground"></div>
+
+      <!-- robot injected by JS -->
+      <div class="robot" id="robot"></div>
+
+      <!-- school + npcs injected by JS -->
+      <div class="school" id="school"></div>
+    </div>
+  </div>
+
+  <!-- subject picker -->
+  <div class="panel" id="panel-subjects">
+    <div class="section-label">เลือกวิชาที่จะใช้ต่อสู้</div>
+    <div class="subject-grid" id="subject-grid"></div>
+  </div>
+
+  <!-- quiz card -->
+  <div class="panel" id="panel-quiz" style="display:none;">
+    <div class="quiz-card">
+      <div class="quiz-tag" id="quiz-tag">วิชา</div>
+      <div class="quiz-q" id="quiz-q">คำถาม</div>
+      <div class="choices" id="quiz-choices"></div>
+      <div class="confirm-row" id="confirm-row">
+        <button class="btn-cancel kanit" onclick="cancelChoice()">✕ เปลี่ยนคำตอบ</button>
+        <button class="btn-confirm kanit" onclick="confirmChoice()">ยืนยันคำตอบ →</button>
+      </div>
+    </div>
+    <div class="result-panel" id="result-panel">
+      <div id="result-text"></div>
+      <div class="explain-box" id="explain-box"></div>
+      <button class="next-btn kanit" id="btn-next" onclick="nextRound()">ไปต่อ →</button>
+    </div>
+  </div>
+</section>
+
+<!-- CONFIDENCE MODAL -->
+<div class="modal-overlay" id="confidence-modal">
+  <div class="modal">
+    <h3 class="kanit">มั่นใจแค่ไหนกับคำตอบนี้?</h3>
+    <p>ยิ่งมั่นใจมากแต่ตอบผิด หุ่นยนต์จะยิ่งเร่งความเร็วขึ้นมาก!</p>
+    <div class="conf-row" id="conf-row">
+      <button class="conf-btn conf-wide" onclick="confirmConfidence('low')">🤔<br>มั่นใจน้อย</button>
+      <button class="conf-btn conf-wide" onclick="confirmConfidence('high')">💪<br>มั่นใจมาก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= END SCREEN ================= -->
+<section id="screen-end" class="screen">
+  <div class="end-emoji" id="end-emoji">🏫</div>
+  <div class="end-title kanit" id="end-title">ผลลัพธ์</div>
+  <div class="end-sub" id="end-sub">รายละเอียด</div>
+  <div class="end-stats">
+    <div class="end-stat"><div class="num" id="end-correct">0</div><div class="lbl">ตอบถูก</div></div>
+    <div class="end-stat"><div class="num" id="end-wrong">0</div><div class="lbl">ตอบผิด</div></div>
+    <div class="end-stat"><div class="num" id="end-best-streak">0</div><div class="lbl">ติดกันสูงสุด</div></div>
+  </div>
+  <button class="retry-btn kanit" onclick="restartGame()">เล่นอีกครั้ง</button>
+</section>
+
+<script>
+/* ============================================================
+   DATA
+============================================================ */
+const SUBJECTS = [
+  { id:'sci',  name:'วิทยาศาสตร์', icon:'🔬' },
+  { id:'math', name:'คณิตศาสตร์',  icon:'➗' },
+  { id:'eng',  name:'ภาษาอังกฤษ',  icon:'🔤' },
+  { id:'soc',  name:'สังคมศึกษา',  icon:'🏛️' },
+  { id:'thai', name:'ภาษาไทย',     icon:'✍️' },
+];
+
+const QUESTIONS = {
+  junior: {
+    sci: [
+      {q:"ส่วนประกอบใดของเซลล์พืชที่พบในเซลล์สัตว์ไม่ได้?", c:["นิวเคลียส", "ไมโทคอนเดรีย", "ผนังเซลล์", "เยื่อหุ้มเซลล์"], a:2, e:"ผนังเซลล์ (Cell wall) และคลอโรพลาสต์ (Chloroplast) เป็นโครงสร้างที่พบเฉพาะในเซลล์พืช เพื่อช่วยเพิ่มความแข็งแรงและสังเคราะห์ด้วยแสง ส่วนนิวเคลียส ไมโทคอนเดรีย และเยื่อหุ้มเซลล์ พบได้ทั้งในเซลล์พืชและเซลล์สัตว์"},
+      {q:"กระบวนการสังเคราะห์ด้วยแสงของพืช ผลิตภัณฑ์แรกที่เป็นน้ำตาลคืออะไร?", c:["น้ำตาลซูโครส", "น้ำตาลกลูโคส", "น้ำตาลฟรุกโตส", "น้ำตาลมอลโทส"], a:1, e:"สมการการสังเคราะห์ด้วยแสงคือ แก๊สคาร์บอนไดออกไซด์ + น้ำ โดยมีแสงและคลอโรฟิลล์ จะได้น้ำตาลกลูโคส (C₆H₁₂O₆) แก๊สออกซิเจน และน้ำ"},
+      {q:"อวัยวะใดในระบบย่อยอาหารของมนุษย์ที่มีการย่อยสารอาหารประเภทโปรตีนเป็นแห่งแรก?", c:["ปาก", "กระเพาะอาหาร", "ลำไส้เล็ก", "ลำไส้ใหญ่"], a:1, e:"ในปากมีการย่อยคาร์โบไฮเดรตด้วยเอนไซม์อะไมเลส ส่วนโปรตีนจะเริ่มถูกย่อยครั้งแรกในกระเพาะอาหารโดยเอนไซม์เพปซิน (Pepsin)"},
+      {q:"ข้อใดคือหน้าที่หลักของเม็ดเลือดขาว?", c:["ลำเลียงแก๊สออกซิเจน", "ช่วยในการแข็งตัวของเลือด", "ทำลายเชื้อโรคและสิ่งแปลกปลอม", "ลำเลียงสารอาหารไปยังส่วนต่างๆ ของร่างกาย"], a:2, e:"เม็ดเลือดขาวทำหน้าที่สร้างภูมิคุ้มกันและทำลายสิ่งแปลกปลอม ส่วนเม็ดเลือดแดงทำหน้าที่ลำเลียงออกซิเจน และเกล็ดเลือดช่วยในการแข็งตัวของเลือด"},
+      {q:"การปฏิสนธิของพืชดอกเกิดขึ้นที่บริเวณใด?", c:["ยอดเกสรตัวเมีย", "ก้านเกสรตัวเมีย", "ออวุล", "กลีบดอก"], a:2, e:"ละอองเรณูจะตกบนยอดเกสรตัวเมียแล้วงอกหลอดเรณูลงไปปฏิสนธิกับเซลล์ไข่ที่อยู่ภายในออวุล (Ovule) ซึ่งต่อมาจะเจริญไปเป็นเมล็ด"},
+      {q:"ธาตุในข้อใดจัดเป็นธาตุโลหะทั้งหมด?", c:["เหล็ก, ทองแดง, โซเดียม", "คาร์บอน, ออกซิเจน, ไนโตรเจน", "ซิลิคอน, โบรอน, สารหนู", "ฮีเลียม, นีออน, อาร์กอน"], a:0, e:"ข้อ 1 เป็นโลหะทั้งหมด, ข้อ 2 เป็นอโลหะ, ข้อ 3 เป็นกึ่งโลหะ และข้อ 4 เป็นแก๊สมีตระกูล (อโลหะ)"},
+      {q:"สารในข้อใดจัดเป็น \"สารบริสุทธิ์\"?", c:["น้ำเกลือ", "น้ำกลั่น", "น้ำอัดลม", "อากาศ"], a:1, e:"น้ำกลั่นประกอบด้วยโมเลกุลของน้ำ (H₂O) เพียงชนิดเดียว จึงเป็นสารบริสุทธิ์ (ประเภทสารประกอบ) ส่วนน้ำเกลือ น้ำอัดลม และอากาศ เป็นสารผสม"},
+      {q:"กระบวนการเปลี่ยนแปลงสถานะจากแก๊สกลายเป็นของเหลวเรียกว่าอะไร?", c:["การระเหย", "การระเบิด", "การควบแน่น", "การหลอมเหลว"], a:2, e:"การควบแน่น (Condensation) คือการที่แก๊สสูญเสียความร้อนแล้วเปลี่ยนสถานะกลับมาเป็นของเหลว"},
+      {q:"การแยกสารผสมที่เป็นของเหลวสองชนิดที่มีจุดเดือดต่างกันมาก ควรใช้วิธีใด?", c:["การกรอง", "การตกผลึก", "การสกัดด้วยตัวทำละลาย", "การกลั่นอย่างง่าย"], a:3, e:"การกลั่นอย่างง่าย (Simple distillation) เหมาะสำหรับแยกของเหลวออกจากของเหลวหรือของแข็งละลายในของเหลวที่มีจุดเดือดต่างกันตั้งแต่ 30 องศาเซลเซียสขึ้นไป"},
+      {q:"สารที่มี pH เท่ากับ 3 จัดเป็นสารประเภทใด?", c:["กรดแก่", "กรดอ่อน", "เบสอ่อน", "เบสแก่"], a:0, e:"ค่า pH ต่ำกว่า 7 เป็นกรด ยิ่งค่าน้อยยิ่งมีความเป็นกรดสูง ค่า pH 3 จึงมีความเป็นกรดค่อนข้างมาก (กรดแก่)"},
+      {q:"วัตถุเคลื่อนที่ด้วยความเร็วคงตัว 10 เมตรต่อวินาที เป็นเวลา 5 วินาที จะได้ระยะทางเท่าใด?", c:["2 เมตร", "15 เมตร", "50 เมตร", "100 เมตร"], a:2, e:"จากสูตร s = v × t จะได้ s = 10 × 5 = 50 เมตร"},
+      {q:"แรงชนิดใดที่ต้านการเคลื่อนที่ของวัตถุ?", c:["แรงโน้มถ่วง", "แรงแม่เหล็ก", "แรงเสียดทาน", "แรงลอยตัว"], a:2, e:"แรงเสียดทาน (Friction force) คือแรงที่เกิดขึ้นระหว่างผิวสัมผัสของวัตถุสองชิ้น โดยมีทิศทางตรงข้ามกับการเคลื่อนที่ของวัตถุเสมอ"},
+      {q:"เครื่องกลอย่างง่ายชนิดใดที่ทำงานโดยใช้หลักการของ \"คาน\"?", c:["กรรไกรตัดกระดาษ", "ลวดหนาม", "ล้อและเพลา", "สกรู"], a:0, e:"กรรไกรเป็นคานประเภทหนึ่งที่มีจุดหมุน (Fulcrum) อยู่ระหว่างแรงพยายามและแรงต้าน"},
+      {q:"เมื่อเราต้มน้ำจนเดือด การถ่ายโอนความร้อนผ่านตัวน้ำเองเป็นแบบใด?", c:["การนำความร้อน", "การพาความร้อน", "การแผ่รังสีความร้อน", "การสะท้อนความร้อน"], a:1, e:"การพาความร้อน (Convection) เกิดขึ้นในอนุภาคของของไหล (ของเหลวและแก๊ส) โดยอนุภาคที่ได้รับความร้อนจะขยายตัว ลอยสูงขึ้น และอนุภาคที่เย็นกว่าจะจมลงมารับความร้อนแทน"},
+      {q:"หน่วยวัดกระแสไฟฟ้าตามระบบ SI คืออะไร?", c:["โวลต์ (V)", "แอมแปร์ (A)", "โอห์ม (Ω)", "วัตต์ (W)"], a:1, e:"กระแสไฟฟ้าวัดในหน่วยแอมแปร์, ความต่างศักย์วัดเป็นโวลต์, ความต้านทานวัดเป็นโอห์ม และกำลังไฟฟ้าวัดเป็นวัตต์"},
+      {q:"ดาวเคราะห์ดวงใดได้ชื่อว่าเป็น \"ดาวเคราะห์สีแดง\"?", c:["ดาวพุธ", "ดาวศุกร์", "ดาวอังคาร", "ดาวพฤหัสบดี"], a:2, e:"ดาวอังคารมีพื้นผิวที่เต็มไปด้วยไอรอน(III) ออกไซด์ หรือสนิมเหล็ก ทำให้มองเห็นเป็นสีแดงเข้ม"},
+      {q:"ปรากฏการณ์สุริยุปราคาเกิดขึ้นเมื่อวัตถุโคจรเรียงตัวอย่างไร?", c:["โลก - ดวงอาทิตย์ - ดวงจันทร์", "ดวงอาทิตย์ - โลก - ดวงจันทร์", "ดวงอาทิตย์ - ดวงจันทร์ - โลก", "ดวงจันทร์ - โลก - ดวงอาทิตย์"], a:2, e:"สุริยุปราคาเกิดจากดวงจันทร์เคลื่อนมาอยู่ระหว่างดวงอาทิตย์กับโลก ทำให้เงาของดวงจันทร์ทอดลงมาบนโลก"},
+      {q:"ชั้นบรรยากาศใดที่มีปรากฏการณ์ทางอากาศ เช่น ฝนตก พายุ และหิมะ เกิดขึ้นมากที่สุด?", c:["โทรโพสเฟียร์ (Troposphere)", "สตราโตสเฟียร์ (Stratosphere)", "มีโซสเฟียร์ (Mesosphere)", "เทอร์โมสเฟียร์ (Thermosphere)"], a:0, e:"ชั้นโทรโพสเฟียร์เป็นชั้นที่อยู่ติดกับพื้นโลก มีไอน้ำและอากาศหนาแน่นที่สุด จึงเกิดลม พายุ ฝน และเมฆ"},
+      {q:"หินอัคนีเกิดจากกระบวนการใด?", c:["การทับถมของตะกอน", "การเย็นตัวและตกผลึกของแมกมาหรือลาวา", "การได้รับความร้อนและความดันสูงจนเปลี่ยนสภาพ", "การกัดเซาะของลมและน้ำ"], a:1, e:"หินอัคนี (Igneous rock) เกิดจากการแข็งตัวของหินหลอมเหลว (แมกมาใต้เปลือกโลก หรือลาวาบนพื้นผิว)"},
+      {q:"สาเหตุหลักของปรากฏการณ์เรือนกระจก (Greenhouse Effect) เกิดจากแก๊สชนิดใดมากที่สุด?", c:["ออกซิเจน", "ไนโตรเจน", "คาร์บอนไดออกไซด์", "ไฮโดรเจน"], a:2, e:"แม้ว่าไอน้ำจะมีผลมาก แต่แก๊สเรือนกระจกหลักที่เกิดจากกิจกรรมของมนุษย์และสะสมจนทำให้เกิดโลกร้อนคือ คาร์บอนไดออกไซด์ (CO₂)"},
+      {q:"โครโมโซมของมนุษย์ในเซลล์ร่างกายปกติมีกี่คู่?", c:["21 คู่", "22 คู่", "23 คู่", "46 คู่"], a:2, e:"เซลล์ร่างกายมนุษย์มีโครโมโซมทั้งหมด 46 แท่ง หรือ 23 คู่ (แบ่งเป็นโครโมโซมร่างกาย 22 คู่ และโครโมโซมเพศ 1 คู่)"},
+      {q:"ยีนที่เป็นลักษณะด้อยจะแสดงอาการหรือลักษณะออกมาเมื่อใด?", c:["จับคู่กับยีนเด่น", "อยู่คู่กับยีนด้อยด้วยกัน", "อยู่ตัวเดียว", "แสดงออกมาเสมอไม่ว่าจะจับคู่กับยีนใด"], a:1, e:"ลักษณะด้อย (Recessive trait) จะแสดงลักษณะออกมาได้ก็ต่อเมื่ออยู่ในรูปของ Homozygous recessive (เช่น aa) เท่านั้น"},
+      {q:"สิ่งมีชีวิตในข้อใดจัดเป็น \"ผู้ย่อยสลายสารอินทรีย์\" (Decomposer)?", c:["หญ้า", "กระต่าย", "เห็ดและรา", "เสือ"], a:2, e:"เห็ด รา และแบคทีเรีย ย่อยสลายซากสิ่งมีชีวิตให้กลายเป็นสารอินทรีย์คืนสู่ดิน จึงจัดเป็นผู้ย่อยสลาย"},
+      {q:"การหมุนเวียนของสารในข้อใดที่ไม่มีวัฏจักรผ่านชั้นบรรยากาศ?", c:["วัฏจักรน้ำ", "วัฏจักรคาร์บอน", "วัฏจักรไนโตรเจน", "วัฏจักรฟอสฟอรัส"], a:3, e:"วัฏจักรฟอสฟอรัสส่วนใหญ่เกิดขึ้นในดิน หิน และน้ำ ไม่มีสถานะที่เป็นแก๊สอยู่ในบรรยากาศ ต่างจากน้ำ คาร์บอน และไนโตรเจน"},
+      {q:"อวัยวะใดทำหน้าที่กรองเสียออกจากเลือดเพื่อขับออกทางปัสสาวะ?", c:["ตับ", "ไต", "ปอด", "ตับอ่อน"], a:1, e:"ไต (Kidneys) ทำหน้าที่กรองของเสีย เช่น ยูเรีย และรักษาสมดุลน้ำและเกลือแร่ในเลือด แล้วขับออกเป็นปัสสาวะ"},
+      {q:"ข้อใดไม่ใช่ผลของการเพิ่มขึ้นของอุณหภูมิโลก?", c:["ระดับน้ำทะเลสูงขึ้น", "เกิดความแห้งแล้งรุนแรง", "แผ่นดินไหวถี่ขึ้น", "สภาพอากาศแปรปรวน"], a:2, e:"แผ่นดินไหวเกิดจากความเคลื่อนไหวของแผ่นเปลือกโลก ไม่ได้เป็นผลโดยตรงจากอุณหภูมิของบรรยากาศโลกที่สูงขึ้น"},
+      {q:"ในการทดลองทางวิทยาศาสตร์ ตัวแปรที่ต้องควบคุมให้คงที่เรียกว่าอะไร?", c:["ตัวแปรต้น", "ตัวแปรตาม", "ตัวแปรควบคุม", "ตัวแปรแทรกซ้อน"], a:2, e:"ตัวแปรควบคุม (Controlled variable) คือสิ่งที่เราต้องจัดให้เหมือนกันทุกชุดทดลอง เพื่อไม่ให้ส่งผลกระทบต่อผลการทดลอง"},
+      {q:"พลังงานทดแทนชนิดใดจัดเป็นพลังงานหมุนเวียนที่ไม่มีวันหมด?", c:["ถ่านหิน", "น้ำมันดิบ", "แสงอาทิตย์", "แก๊สธรรมชาติ"], a:2, e:"พลังงานแสงอาทิตย์ ลม และน้ำ เป็นพลังงานหมุนเวียน (Renewable energy) ส่วนถ่านหิน น้ำมัน และแก๊สธรรมชาติใช้แล้วหมดไป (Non-renewable energy)"},
+      {q:"การทดสอบแป้งในอาหาร ใช้สารเคมีชนิดใด?", c:["สารละลายเบเนดิกต์", "สารละลายไอโอดีน", "สารละลายไบยูเรต", "เอทานอล"], a:1, e:"ไอโอดีนใช้นำมาทดสอบแป้ง (จะเปลี่ยนจากสีน้ำตาลเป็นสีน้ำเงินเข้ม/ม่วงดำ), เบเนดิกต์ทดสอบน้ำตาลรีดิวซ์, ไบยูเรตทดสอบโปรตีน"},
+      {q:"คลื่นชนิดใดที่ไม่จำเป็นต้องอาศัยตัวกลางในการเคลื่อนที่?", c:["คลื่นเสียง", "คลื่นน้ำ", "คลื่นในเส้นเชือก", "คลื่นแสง"], a:3, e:"คลื่นแสงเป็นคลื่นแม่เหล็กไฟฟ้า สามารถเดินทางผ่านอวกาศที่เป็นสุญญากาศได้ ต่างจากคลื่นกลชนิดอื่นที่ต้องอาศัยตัวกลาง"},
+    ],
+    math: [
+      {q:"ค่าของ (-5) + (-8) - (-12) เท่ากับเท่าใด?", c:["-25", "-1", "1", "25"], a:1, e:"(-5) + (-8) = -13 จากนั้น -13 - (-12) = -13 + 12 = -1"},
+      {q:"ห.ร.ม. ของ 12, 18 และ 24 คือเท่าใด?", c:["2", "3", "6", "72"], a:2, e:"ตัวหารร่วมที่มากที่สุดของ 12, 18, 24 คือ 6 (12=6×2, 18=6×3, 24=6×4)"},
+      {q:"ค.ร.น. ของ 8, 12 และ 15 คือเท่าใด?", c:["60", "120", "180", "240"], a:1, e:"พหุคูณร่วมที่น้อยที่สุดที่ 8, 12 และ 15 หารลงตัวคือ 120"},
+      {q:"ผลลัพธ์ของ (3/4) + (2/5) มีค่าเท่าใด?", c:["(5/9)", "(6/20)", "(23/20)", "(15/20)"], a:2, e:"แปลงตัวส่วนให้เท่ากันด้วย ค.ร.น. คือ 20: (3×5/20) + (2×4/20) = (15/20) + (8/20) = (23/20)"},
+      {q:"ถ้า 2x + 5 = 17 แล้วค่าของ x เท่ากับเท่าใด?", c:["4", "6", "11", "12"], a:1, e:"2x = 17 - 5 ⇒ 2x = 12 ⇒ x = 6"},
+      {q:"อัตราส่วน 3 : 5 เท่ากับอัตราส่วนในข้อใด?", c:["6 : 8", "9 : 12", "12 : 20", "15 : 20"], a:2, e:"นำ 4 มาคูณทั้งสองจำนวนของ 3 : 5 จะได้ (3×4) : (5×4) = 12 : 20"},
+      {q:"สินค้าราคา 500 บาท ติดป้ายลดราคา 20% จะต้องจ่ายเงินกี่บาท?", c:["100 บาท", "300 บาท", "400 บาท", "480 บาท"], a:2, e:"ส่วนลด = 500 × (20/100) = 100 บาท ดังนั้นราคาขาย = 500 - 100 = 400 บาท"},
+      {q:"รูปสามเหลี่ยมมุมฉากมีด้านประกอบมุมฉากยาว 6 ซม. และ 8 ซม. ด้านตรงข้ามมุมฉากจะยาวกี่ ซม.?", c:["9 ซม.", "10 ซม.", "12 ซม.", "14 ซม."], a:1, e:"ใช้ทฤษฎีบทพีทาโกรัส c² = a² + b² = 6² + 8² = 36 + 64 = 100 ⇒ c = 10 ซม."},
+      {q:"พื้นที่ของรูปสี่เหลี่ยมผืนผ้าที่มีความยาว 12 เซนติเมตร และความกว้าง 7 เซนติเมตร เท่ากับกี่ตารางเซนติเมตร?", c:["38 ตารางเซนติเมตร", "74 ตารางเซนติเมตร", "84 ตารางเซนติเมตร", "96 ตารางเซนติเมตร"], a:2, e:"พื้นที่สี่เหลี่ยมผืนผ้า = กว้าง × ยาว = 7 × 12 = 84 ตารางเซนติเมตร"},
+      {q:"เส้นรอบวงของวงกลมที่มีรัศมี 7 เซนติเมตร ยาวเท่าใด? (กำหนดให้ π ≈ (22/7))", c:["22 เซนติเมตร", "44 เซนติเมตร", "88 เซนติเมตร", "154 เซนติเมตร"], a:1, e:"เส้นรอบวง = 2π r = 2 × (22/7) × 7 = 44 เซนติเมตร"},
+      {q:"ผลคูณของ (x + 3)(x - 2) เท่ากับเท่าใด?", c:["x² - 6", "x² + x - 6", "x² - x - 6", "x² + 5x - 6"], a:1, e:"(x+3)(x-2) = x(x) - 2x + 3x - 3(2) = x² + x - 6"},
+      {q:"ค่าของ 2⁴ × 2³ มีค่าเท่าใด?", c:["2⁷", "2¹²", "4⁷", "4¹²"], a:0, e:"ตามกฎของเลขยกกำลัง am × an = am⁺n ดังนั้น 2⁴ × 2³ = 2⁴⁺³ = 2⁷"},
+      {q:"ปริมาตรของทรงสี่เหลี่ยมมุมฉากที่มีความกว้าง 4 ซม. ยาว 5 ซม. สูง 10 ซม. คือเท่าใด?", c:["19 ลบ.ซม.", "90 ลบ.ซม.", "100 ลบ.ซม.", "200 ลบ.ซม."], a:3, e:"ปริมาตร = กว้าง × ยาว × สูง = 4 × 5 × 10 = 200 ลูกบาศก์เซนติเมตร"},
+      {q:"มุมภายในของรูปสามเหลี่ยมรวมกันได้กี่องศา?", c:["90 องศา", "180 องศา", "270 องศา", "360 องศา"], a:1, e:"ผลรวมของขนาดของมุมภายในของรูปสามเหลี่ยมใดๆ จะเท่ากับ 180 องศาเสมอ"},
+      {q:"ค่าเฉลี่ยเลขคณิตของข้อมูล 4, 7, 10, 13, 16 เท่ากับเท่าใด?", c:["8", "10", "12", "50"], a:1, e:"ค่าเฉลี่ย = (4 + 7 + 10 + 13 + 16/5) = (50/5) = 10"},
+      {q:"มัธยฐานของ ชุดข้อมูล 3, 9, 2, 8, 5 คือข้อใด?", c:["3", "5", "5.4", "8"], a:1, e:"เรียงลำดับข้อมูลจากน้อยไปมาก: 2, 3, **5**, 8, 9 ค่าตรงกลางคือ 5"},
+      {q:"ความน่าจะเป็นในการโยนเหรียญเที่ยงตรง 1 เหรียญ แล้วออก \"หัว\" เป็นเท่าใด?", c:["0", "(1/2)", "1", "2"], a:1, e:"เหตุการณ์ทั้งหมดที่เป็นไปได้มี 2 แบบ (หัว, ก้อย) เหตุการณ์ที่สนใจมี 1 แบบ (หัว) ความน่าจะเป็น = (1/2)"},
+      {q:"ถ้า x² = 144 แล้วค่าของ x คือข้อใด?", c:["12 เท่านั้น", "-12 เท่านั้น", "12 หรือ -12", "72 หรือ -72"], a:2, e:"เนื่องจาก (12)² = 144 และ (-12)² = 144 ดังนั้น x จึงมีค่าได้ทั้ง 12 และ -12"},
+      {q:"รูปดาวหกแฉกมีเส้นแกนสมมมาตรกี่เส้น? (สมมติว่าเป็นรูปดาวสมบูรณ์แบบ)", c:["3 เส้น", "6 เส้น", "12 เส้น", "ไม่จำกัดจำนวน"], a:1, e:"รูปดาว 6 แฉกสมบูรณ์แบบ มีแกนสมมมาตรทั้งหมด 6 เส้น (ผ่านยอดแฉก 3 เส้น และผ่านร่องระหว่างแฉก 3 เส้น)"},
+      {q:"ความยาวของเส้นผ่านศูนย์กลางวงกลมเป็นกี่เท่าของรัศมี?", c:["0.5 เท่า", "1 เท่า", "2 เท่า", "π เท่า"], a:2, e:"เส้นผ่านศูนย์กลาง (Diameter) ยาวเป็นสองเท่าของรัศมี (d = 2r)"},
+      {q:"กราฟของสมการ y = 3x - 5 ตัดแกน Y ที่จุดใด?", c:["(0, 3)", "(0, -5)", "(3, 0)", "(-5, 0)"], a:1, e:"จุดตัดแกน Y เกิดขึ้นเมื่อ x = 0 แทนค่า x = 0 ได้ y = 3(0) - 5 = -5 ดังนั้น จุดตัดคือ (0, -5)"},
+      {q:"ข้อใดคือตัวแยกตัวประกอบของ x² - 9?", c:["(x - 3)²", "(x + 3)²", "(x - 3)(x + 3)", "(x - 9)(x + 1)"], a:2, e:"ใช้สูตรผลต่างกำลังสอง A² - B² = (A - B)(A + B) จะได้ x² - 3² = (x - 3)(x + 3)"},
+      {q:"การกู้เงิน 10,000 บาท อัตราดอกเบี้ยอย่างง่าย 5% ต่อปี เป็นเวลา 2 ปี จะต้องจ่ายดอกเบี้ยรวมกี่บาท?", c:["500 บาท", "1,000 บาท", "1,050 บาท", "2,000 บาท"], a:1, e:"ดอกเบี้ย = เงินต้น × อัตราดอกเบี้ย × ระยะเวลา = 10,000 × (5/100) × 2 = 1,000 บาท"},
+      {q:"มุมที่มีขนาดมากกว่า 90 องศา แต่แคบกว่า 180 องศา เรียกว่ามุมอะไร?", c:["มุมแหลม", "มุมฉาก", "มุมป้าน", "มุมกลับ"], a:2, e:"มุมแหลม (<90^°), มุมฉาก (90^°), มุมป้าน (>90^° แต่ <180^°), มุมกลับ (>180^° แต่ <360^°)"},
+      {q:"แผนภูมิชนิดใดเหมาะที่สุดในการแสดงส่วนแบ่งหรือสัดส่วนของข้อมูลทั้งหมด?", c:["แผนภูมิแท่ง", "แผนภูมิรูปวงกลม", "กราฟเส้น", "แผนภาพต้น-ใบ"], a:1, e:"แผนภูมิรูปวงกลม (Pie chart) แสดงอัตราส่วนหรือร้อยละเทียบกับภาพรวม 100% ได้ชัดเจนที่สุด"},
+      {q:"ค่าของ √(81) + √(16) เท่ากับเท่าใด?", c:["13", "25", "97", "12"], a:0, e:"√(81) = 9 และ √(16) = 4 ดังนั้น 9 + 4 = 13"},
+      {q:"ถ้า 3(x - 4) = 15 แล้ว x มีค่าเท่าใด?", c:["1", "5", "9", "19"], a:2, e:"x - 4 = (15/3) ⇒ x - 4 = 5 ⇒ x = 9"},
+      {q:"รูปเหลี่ยมที่มีผลรวมมุมภายในเท่ากับ 360 องศา คือรูปใด?", c:["รูปสามเหลี่ยม", "รูปสี่เหลี่ยม", "รูปห้าเหลี่ยม", "รูปหกเหลี่ยม"], a:1, e:"สูตรมุมภายใน = (n - 2) × 180^° สำหรับสี่เหลี่ยม n=4 ⇒ (4-2)×180^° = 360^°"},
+      {q:"ฐานนิยม (Mode) ของชุดข้อมูล 2, 4, 4, 5, 7, 8, 4 คือข้อใด?", c:["4", "5", "7", "ไม่มีฐานนิยม"], a:0, e:"ฐานนิยมคือข้อมูลที่มีความถี่ซ้ำกันมากที่สุด ซึ่งในชุดนี้คือ 4 (ปรากฏ 3 ครั้ง)"},
+      {q:"ระยะทางในแผนที่ 3 เซนติเมตร แทนระยะทางจริงเท่าใด ถ้ามาตราส่วนคือ 1 : 50,000?", c:["1.5 กิโลเมตร", "15 กิโลเมตร", "150 กิโลเมตร", "150,000 กิโลเมตร"], a:0, e:"3 ซม. ในแผนที่ = 3 × 50,000 = 150,000 ซม. แปลงเป็นเมตร = 1,500 เมตร = 1.5 กิโลเมตร"},
+    ],
+    eng: [
+      {q:"She ___ to school by bus every morning.", c:["go", "goes", "went", "is going"], a:1, e:"ประโยคแสดงนิสัย/กิจวัตรประจำวัน (every morning) ใช้ Present Simple Tense โดยประธานเอกพจน์ (She) กริยาต้องเติม -s/-es"},
+      {q:"They ___ football when it started to rain.", c:["play", "played", "were playing", "have played"], a:2, e:"เหตุการณ์ที่กำลังเกิดขึ้นในอดีต (Past Continuous) แล้วมีอีกเหตุการณ์หนึ่งแทรกเข้ามา (Past Simple - started)"},
+      {q:"This book is ___ than that one.", c:["interesting", "more interesting", "most interesting", "as interesting"], a:1, e:"เป็นการเปรียบเทียบขั้นกว่า (Comparative degree) โดยสังเกตคำว่า \"than\" คำคุณศัพท์ยาวๆ ใช้ more + adj."},
+      {q:"Which word is a **synonym** of \"happy\"?", c:["Sad", "Joyful", "Angry", "Tired"], a:1, e:"Synonym แปลว่า คำที่มีความหมายเหมือนกัน คำว่า \"happy\" แปลว่า มีความสุข ซึ่งตรงกับคำว่า \"joyful\""},
+      {q:"If I ___ rich, I would travel around the world.", c:["am", "was", "were", "have been"], a:2, e:"โครงสร้างประโยคเงื่อนไขแบบสมมติสิ่งที่ไม่เป็นจริงในปัจจุบัน (Second Conditional) ในภาษาอังกฤษเป็นทางการ ประธานทุกตัวจะใช้ \"were\" หลัง If"},
+      {q:"Look at those black clouds! It ___ rain soon.", c:["will", "is going to", "should", "must"], a:1, e:"ใช้ \"be going to\" เมื่อเป็นการคาดคะเนเหตุการณ์ที่จะเกิดขึ้นแน่นอนโดยมีหลักฐานให้เห็นเด่นชัด (black clouds)"},
+      {q:"There isn't ___ milk left in the refrigerator.", c:["some", "any", "many", "few"], a:1, e:"คำว่า \"any\" ใช้ในประโยคปฏิเสธและประโยคคำถามกับคำนามนับไม่ได้หรือนามพหูพจน์ (isn't = ปฏิเสธ)"},
+      {q:"My father is a doctor. ___ works at the city hospital.", c:["He", "She", "It", "They"], a:0, e:"สรรพนามบุรุษที่ 3 สำหรับเพศชายเอกพจน์ (father) คือ \"He\""},
+      {q:"What is the opposite (antonym) of the word \"brave\"?", c:["Strong", "Cowardly", "Smart", "Kind"], a:1, e:"Brave แปลว่า กล้าหาญ คำตรงข้าม (Antonym) คือ Cowardly แปลว่า ขี้ขลาด"},
+      {q:"Have you ever ___ to Japan?", c:["go", "went", "been", "going"], a:2, e:"โครงสร้าง Present Perfect Tense คือ Subject + have/has + V.3 ประสบการณ์ใช้ \"been to\""},
+      {q:"He was absent from school yesterday ___ he was sick.", c:["although", "because", "but", "so"], a:1, e:"ใช้ \"because\" เพื่อแสดงเหตุผล (เขาขาดเรียน \"เพราะ\" เขาป่วย)"},
+      {q:"Please turn ___ the light before you leave the room.", c:["on", "off", "in", "up"], a:1, e:"turn off แปลว่า ปิด (เครื่องใช้ไฟฟ้า/ไฟ) ซึ่งเหมาะกับบริบทการออกจากห้อง"},
+      {q:"A person who cooks food in a restaurant is called a ___.", c:["waiter", "chef", "pilot", "dentist"], a:1, e:"Chef คือ พ่อครัว/แม่ครัว คนทำอาหารในร้านอาหาร"},
+      {q:"I am interested ___ learning new languages.", c:["in", "at", "on", "for"], a:0, e:"คำคุณศัพท์ \"interested\" มักใช้คู่กับคำบุพบท \"in\" (be interested in something)"},
+      {q:"What time ___ the movie start?", c:["do", "does", "is", "are"], a:1, e:"ประธานคือ \"the movie\" (เอกพจน์) ในประโยคคำถาม Present Simple ที่ใช้กริยาแท้ (start) ต้องใช้กริยานุเคราะห์ \"does\""},
+      {q:"This is the house ___ I was born.", c:["who", "which", "where", "when"], a:2, e:"ใช้ Relative Adverb \"where\" เพื่ออ้างถึงสถานที่ (the house)"},
+      {q:"She speaks English very ___.", c:["fluent", "fluently", "more fluent", "fluency"], a:1, e:"ต้องใช้คำกริยาวิเศษณ์ (Adverb) คือ \"fluently\" เพื่อมาขยายคำกริยา \"speaks\""},
+      {q:"How ___ students are there in your class?", c:["much", "many", "long", "often"], a:1, e:"ใช้ \"How many\" ถามจำนวนของคำนามนับได้พหูพจน์ (students)"},
+      {q:"I didn't see ___ at the park. It was empty.", c:["someone", "anyone", "everyone", "no one"], a:1, e:"ประโยคปฏิเสธ (didn't see) ใช้ \"anyone\" แปลว่า ไม่เห็นใครเลย"},
+      {q:"Which punctuation mark is used at the end of an exclamatory sentence?", c:["Period (.)", "Question mark (?)", "Exclamation mark (!)", "Comma (,)"], a:2, e:"ประโยคอุทาน (Exclamatory sentence) จะลงท้ายด้วยเครื่องหมายอัศเจรีย์ (!)"},
+      {q:"The sun ___ in the east.", c:["rise", "rises", "rising", "rose"], a:1, e:"ข้อเท็จจริงตามธรรมชาติใช้ Present Simple Tense ประธานเอกพจน์ (The sun) กริยาเติม -s"},
+      {q:"A: \"Thank you very much for your help.\" B: \"___\"", c:["You're welcome.", "Never mind.", "Yes, please.", "Same to you."], a:0, e:"เป็นการตอบรับคำขอบคุณที่เป็นธรรมชาติและสุภาพที่สุด (\"ยินดีครับ/ค่ะ\")"},
+      {q:"I need to buy a ___ of bread.", c:["piece", "slice", "loaf", "bar"], a:2, e:"ลักษณนามของขนมปังที่เป็นปอนด์/แถว ใช้ \"a loaf of bread\" (ส่วน slice คือเป็นแผ่น)"},
+      {q:"Neither John nor his friends ___ attending the party.", c:["is", "are", "was", "be"], a:1, e:"โครงสร้าง \"Neither... nor...\" กริยาจะผันตามประธานตัวที่อยู่ใกล้กริยาที่สุด ซึ่งคือ \"his friends\" (พหูพจน์) จึงใช้ \"are\""},
+      {q:"He works as an engineer, ___ he?", c:["isn't", "doesn't", "don't", "hasn't"], a:1, e:"Question Tag: ประโยคหลักเป็นบอกเล่า Present Simple (works) กริยาช่วยในแท็กต้องเป็นปฏิเสธโดยใช้ doesn't"},
+      {q:"The dog chased ___ own tail.", c:["it", "its", "it's", "itself"], a:1, e:"ต้องการคำสรรพนามแสดงความเป็นเจ้าของ (Possessive adjective) คือ \"its\" (ไม่มี apostrophe)"},
+      {q:"We have lived in Thailand ___ 2010.", c:["for", "since", "in", "on"], a:1, e:"ใช้ \"since\" เพื่อบอกจุดเริ่มต้นของเวลา (ตั้งแต่ปี 2010) ในประโยค Present Perfect"},
+      {q:"What is the past tense of the verb \"catch\"?", c:["Catched", "Caught", "Catcher", "Catching"], a:1, e:"\"catch\" เป็นกริยาไม่เปลี่ยนรูปตามกฎ (Irregular verb) ช่อง 2 และ 3 คือ \"caught\""},
+      {q:"A: \"Would you like some coffee?\" B: \"___\"", c:["No, I am not.", "Yes, I do.", "Yes, please.", "No, I don't."], a:2, e:"การตอบรับข้อเสนออาหารหรือเครื่องดื่มอย่างสุภาพจะใช้ \"Yes, please.\" หรือตอบปฏิเสธใช้ \"No, thank you.\""},
+      {q:"The Mona Lisa ___ by Leonardo da Vinci.", c:["painted", "was painted", "is painting", "paints"], a:1, e:"ประโยคประธานเป็นผู้ถูกกระทำ (Passive Voice) ในอดีต ใช้โครงสร้าง Subject + was/were + V.3"},
+    ],
+    soc: [
+      {q:"ศาสดาของศาสนาพุทธคือใคร?", c:["พระพุทธเจ้า", "พระเยซู", "นบีมุฮัมมัด", "พระศิวะ"], a:0, e:"พระพุทธเจ้า (เจ้าชายสิทธัตถะ) เป็นผู้ศาสดาองค์โปรดและสถาปนาพระพุทธศาสนา"},
+      {q:"หลักธรรมที่เป็นหัวใจสำคัญของพระพุทธศาสนาคือข้อใด?", c:["อริยสัจ 4", "โอวาทปาติโมกข์", "ขันธ์ 5", "อิทธิบาท 4"], a:1, e:"โอวาทปาติโมกข์ คือ หัวใจพุทธศาสนา ได้แก่ การไม่ทำบาปทั้งปวง การทำความดีให้ถึงพร้อม และการทำจิตใจให้บริสุทธิ์"},
+      {q:"วันสำคัญทางพุทธศาสนาวันใดที่เป็นวันเกิด พระธรรม และพระสงฆ์ ครบองค์รัตนตรัย?", c:["วันวิสาขบูชา", "วันมาฆบูชา", "วันอาสาฬหบูชา", "วันอัฏฐมีบูชา"], a:2, e:"วันอาสาฬหบูชาเป็นวันที่พระพุทธเจ้าแสดงปฐมเทศนา เกิดพระอัญญาโกณฑัญญะเป็นพระสงฆ์รูปแรก ทำให้มีพระรัตนตรัยครบ 3 ประการ"},
+      {q:"คัมภีร์ศักดิ์สิทธิ์ของศาสนาอิสลามคือคัมภีร์ใด?", c:["ไบเบิล", "พระไตรปิฎก", "อัลกุรอาน", "เวทมนตร์"], a:2, e:"คัมภีร์อัลกุรอานเป็นคัมภีร์สูงสุดของศาสนาอิสลาม ซึ่งเชื่อว่าเป็นคำสอนจากพระเจ้า (อัลลอฮ์)"},
+      {q:"กฎหมายสูงสุดในการปกครองประเทศไทยคือข้อใด?", c:["พระราชกำหนด", "ประมวลกฎหมายแพ่งและพาณิชย์", "รัฐธรรมนูญ", "พระราชบัญญัติ"], a:2, e:"รัฐธรรมนูญเป็นกฎหมายสูงสุด กฎหมายอื่นใดจะขัดหรือแย้งต่อรัฐธรรมนูญไม่ได้"},
+      {q:"อำนาจอธิปไตยตามรัฐธรรมนูญไทยแบ่งออกเป็น 3 ฝ่าย ได้แก่อะไรบ้าง?", c:["นิติบัญญัติ, บริหาร, ตุลาการ", "ทหาร, ตำรวจ, พลเรือน", "รัฐบาล, สภานายก, ธนาคาร", "พรรคการเมือง, ประชาชน, ข้าราชการ"], a:0, e:"อำนาจอธิปไตยแบ่งเป็น 3 ฝ่ายเพื่อคานอำนาจกัน: นิติบัญญัติ (รัฐสภา), บริหาร (คณะรัฐมนตรี), และตุลาการ (ศาล)"},
+      {q:"ผู้มีสิทธิเลือกตั้งในประเทศไทยต้องมีอายุไม่ต่ำกว่ากี่ปีบริบูรณ์ในวันเลือกตั้ง?", c:["15 ปี", "18 ปี", "20 ปี", "21 ปี"], a:1, e:"ตามรัฐธรรมนูญไทย ประชาชนผู้มีสิทธิเลือกตั้งต้องมีสัญชาติไทยและมีอายุไม่ต่ำกว่า 18 ปีบริบูรณ์ในวันเลือกตั้ง"},
+      {q:"ข้อใดจัดเป็นองค์กรปกครองส่วนท้องถิ่นรูปแบบพิเศษของไทย?", c:["อบต.", "อบจ.", "กรุงเทพมหานคร และ เมืองพัทยา", "เทศบาลนคร"], a:2, e:"กรุงเทพมหานครและเมืองพัทยาจัดเป็นองค์กรปกครองส่วนท้องถิ่นรูปแบบพิเศษ"},
+      {q:"ตามกฎหมาย บุคคลจะบรรลุนิติภาวะเมื่อมีอายุเท่าใด?", c:["15 ปีบริบูรณ์", "18 ปีบริบูรณ์", "20 ปีบริบูรณ์", "25 ปีบริบูรณ์"], a:2, e:"บุคคลย่อมบรรลุนิติภาวะเมื่อมีอายุ 20 ปีบริบูรณ์ หรือการทำการสมรสเมื่ออายุ 17 ปีบริบูรณ์ขึ้นไปโดยชอบด้วยกฎหมาย"},
+      {q:"สินค้าในข้อใดมีความต้องการยืดหยุ่นน้อยที่สุด (เป็นสินค้าจำเป็น)?", c:["กระเป๋าแบรนด์เนม", "ยารักษาโรค", "ตั๋วคอนเสิร์ต", "โทรศัพท์รุ่นใหม่"], a:1, e:"ยารักษาโรคเป็นปัจจัยสี่ที่จำเป็นต่อการดำรงชีวิต แม้ราคาจะปรับขึ้น คนก็ยังจำเป็นต้องซื้อ"},
+      {q:"เมื่อราคาสินค้าเพิ่มสูงขึ้น ความต้องการซื้อ (Demand) ของผู้บริโภคจะเป็นอย่างไรตามกฎของอุปสงค์?", c:["เพิ่มขึ้น", "ลดลง", "เท่าเดิม", "ไม่แน่นอน"], a:1, e:"กฎของอุปสงค์ (Law of Demand) ระบุว่า ถ้าราคาสินค้าสูงขึ้น ปริมาณความต้องการซื้อจะลดลง (แปรผกผันกัน)"},
+      {q:"ธนาคารกลางของประเทศไทยมีหน้าที่หลักคือข้อใด?", c:["รับฝากเงินจากประชาชนทั่วไป", "ออกธนบัตรและควบคุมนโยบายการเงิน", "ให้สินเชื่อแก่บริษัทเอกชนขนาดใหญ่", "ค้าขายอสังหาริมทรัพย์"], a:1, e:"ธนาคารแห่งประเทศไทย (ธปท.) เป็นธนาคารกลาง มีหน้าที่ออกธนบัตร รักษาสเถียรภาพทางการเงิน ไม่ได้ทำธุรกรรมโดยตรงกับประชาชน"},
+      {q:"การรวมกลุ่มทางเศรษฐกิจในภูมิภาคอาเซียนเรียกว่าอะไร?", c:["APEC", "EU", "AEC", "NATO"], a:2, e:"AEC (ASEAN Economic Community) คือ ประชาคมเศรษฐกิจอาเซียน มุ่งเน้นการเปิดเสรีทางการค้าและบริการ"},
+      {q:"เงินเฟ้อ (Inflation) เกิดจากภาวะใด?", c:["ราคาสินค้าโดยทั่วไปแพงขึ้นเรื่อยๆ", "ราคาสินค้าโดยทั่วไปลดลงเรื่อยๆ", "สินค้าขาดแคลนชั่วคราว", "ประชาชนมีเงินเก็บมากขึ้น"], a:0, e:"ภาวะเงินเฟ้อ คือภาวะที่ระดับราคาสินค้าและบริการโดยทั่วไปเพิ่มสูงขึ้นอย่างต่อเนื่อง ทำให้เงินมีอำนาจซื้อลดลง"},
+      {q:"อาณาจักรไทยแห่งแรกตามหลักฐานทางประวัติศาสตร์คืออาณาจักรใด?", c:["สุโขทัย", "อยุธยา", "ธนบุรี", "รัตนโกสินทร์"], a:0, e:"สุโขทัยได้รับการยกย่องตามประวัติศาสตร์แบบเดิมว่าเป็นราชธานีแห่งแรกของคนไทย (สถาปนาประมาณ พ.ศ. 1792)"},
+      {q:"ผู้สถาปนากรุงศรีอยุธยาเป็นราชธานีคือใคร?", c:["พ่อขุนรามคำแหง", "สมเด็จพระรามาธิบดีที่ 1 (พระเจ้าอู่ทอง)", "สมเด็จพระนเรศวรมหาราช", "สมเด็จพระเจ้าตากสินมหาราช"], a:1, e:"พระเจ้าอู่ทองทรงสถาปนากรุงศรีอยุธยาขึ้นเมื่อ พ.ศ. 1893"},
+      {q:"สมเด็จพระนเรศวรมหาราชทรงกระทำยุทธหัตถีชนะพระมหาอุปราชาที่ใด?", c:["ดอนเจดีย์", "บางระจัน", "เวียงจันทน์", "พิษณุโลก"], a:0, e:"สงครามยุทธหัตถีเกิดขึ้นที่ตำบลหนองสาหร่าย อำเภอดอนเจดีย์ จังหวัดสุพรรณบุรี พ.ศ. 2135"},
+      {q:"พระมหากษัตริย์ท่านใดทรงกอบกู้อิสรภาพและสถาปนากรุงธนบุรี?", c:["สมเด็จพระนารายณ์มหาราช", "สมเด็จพระเจ้าตากสินมหาราช", "พระบาทสมเด็จพระพุทธยอดฟ้าจุฬาโลกมหาราช", "พ่อขุนผาเมือง"], a:1, e:"หลังกรุงศรีอยุธยาเสียแก่พม่าครั้งที่ 2 พ.ศ. 2310 สมเด็จพระเจ้าตากสินมหาราชทรงกอบกู้อิสรภาพและตั้งกรุงธนบุรีเป็นเมืองหลวงใหม่"},
+      {q:"การเลิกทาสในประเทศไทยเกิดขึ้นในรัชสมัยของพระมหากษัตริย์องค์ใด?", c:["รัชกาลที่ 3", "รัชกาลที่ 4", "รัชกาลที่ 5", "รัชกาลที่ 6"], a:2, e:"พระบาทสมเด็จพระจุลจอมเกล้าเจ้าอยู่หัว (รัชกาลที่ 5) ทรงประกาศเลิกทาสและเลิกไพร่โดยสันติวิธี"},
+      {q:"ทวีปใดมีขนาดพื้นที่ใหญ่ที่สุดในโลก?", c:["ทวีปอเมริกาเหนือ", "ทวีปแอฟริกา", "ทวีปยุโรป", "ทวีปเอเชีย"], a:3, e:"ทวีปเอเชียเป็นทวีปที่มีขนาดพื้นที่ใหญ่ที่สุดและมีประชากรมากที่สุดในโลก"},
+      {q:"ยอดเขาที่สูงที่สุดในโลกคือยอดเขาใด?", c:["ยอดเขาฟูจิ", "ยอดเขาเอเวอเรสต์", "ยอดเขากิลิมันจาโร", "ยอดเขาอินทนนท์"], a:1, e:"ยอดเขาเอเวอเรสต์ (Everest) อยู่ในเทือกเขาหิมาลัย สูงประมาณ 8,848.86 เมตรเหนือระดับน้ำทะเล"},
+      {q:"มหาสมุทรใดมีขนาดใหญ่และลึกที่สุดในโลก?", c:["มหาสมุทรแอตแลนติก", "มหาสมุทรอินเดีย", "มหาสมุทรแปซิฟิก", "มหาสมุทรอาร์กติก"], a:2, e:"มหาสมุทรแปซิฟิกครอบคลุมพื้นที่กว้างใหญ่ที่สุด และมีจุดลึกที่สุดคือ ร่องลึกมาเรียนา (Mariana Trench)"},
+      {q:"เส้นสมมติที่แบ่งโลกออกเป็นซีกโลกเหนือและซีกโลกใต้เรียกว่าอะไร?", c:["เส้นศูนย์สูตร (Equator)", "เส้นเมริเดียนแรก (Prime Meridian)", "เส้นทรอปิกออฟแคนเซอร์", "เส้นลองจิจูดที่ 180"], a:0, e:"เส้นศูนย์สูตรเป็นเส้นละติจูดที่ 0^° แบ่งโลกออกเป็นซีกโลกเหนือและซีกโลกใต้"},
+      {q:"ภาคใดของประเทศไทยที่มีพื้นที่กว้างใหญ่ที่สุด?", c:["ภาคเหนือ", "ภาคใต้", "ภาคตะวันออกเฉียงเหนือ", "ภาคกลาง"], a:2, e:"ภาคตะวันออกเฉียงเหนือ (ภาคอีสาน) มีพื้นที่รวมประมาณ 168,854 ตารางกิโลเมตร ซึ่งใหญ่ที่สุดในบรรดาภูมิภาคของไทย"},
+      {q:"แม่น้ำสายสำคัญที่สุดที่เป็นหัวใจของการเกษตรในภาคกลางของไทยคือแม่น้ำใด?", c:["แม่น้ำโขง", "แม่น้ำเจ้าพระยา", "แม่น้ำแม่กลอง", "แม่น้ำตาปี"], a:1, e:"แม่น้ำเจ้าพระยาเกิดจากการรวมกันของ ปิง วัง ยม น่าน พัดผ่านที่ราบลุ่มภาคกลาง เป็นแหล่งน้ำและคมนาคมหลัก"},
+      {q:"ปรากฏการณ์ทางธรรมชาติใดที่เกิดจากการขยับตัวของเปลือกโลกใต้ทะเลอย่างรุนแรง?", c:["พายุหมุนทอร์นาโด", "สึนามิ", "แผ่นดินหล่ม", "ภัยแล้ง"], a:1, e:"คลื่นยักษ์สึนามิมักเกิดจากแผ่นดินไหวขนาดใหญ่ใต้พื้นมหาสมุทร ทำให้เกิดการถ่ายโอนพลังงานมหาศาลสู่น้ำทะเล"},
+      {q:"เครื่องมือทางภูมิศาสตร์ชนิดใดใช้สำหรับวัดความกดอากาศ?", c:["เทอร์มอมิเตอร์", "บารอมิเตอร์", "ไฮโกรมิเตอร์", "แอนีโมมิเตอร์"], a:1, e:"บารอมิเตอร์ใช้วัดความกดอากาศ (เทอร์มอมิเตอร์วัดอุณหภูมิ, ไฮโกรมิเตอร์วัดความชื้น, แอนีโมมิเตอร์วัดความเร็วลม)"},
+      {q:"ละติจูด (Latitude) เป็นเส้นสมมติที่ใช้สำหรับบอกสิ่งใด?", c:["เวลา", "พิกัดตำแหน่งและความแตกต่างของเขตภูมิอากาศ", "ทิศทางการไหลของน้ำ", "ความสูงต่ำของพื้นที่"], a:1, e:"เส้นละติจูด (เส้นแนวนอน) ใช้บอกตำแหน่งบนโลกและแบ่งเขตภูมิอากาศ (เช่น ร้อน, อบอุ่น, ขั้วโลก) ส่วนเส้นลองจิจูดใช้กำหนดเขตเวลา"},
+      {q:"ข้อใดจัดเป็นองค์ประกอบทางวัฒนธรรมที่ไม่ใช่วัตถุ (Non-material culture)?", c:["โบสถ์วิหาร", "เครื่องแต่งกาย", "ความเชื่อและค่านิยม", "อาหาร"], a:2, e:"วัฒนธรรมที่ไม่ใช่วัตถุ คือสิ่งที่จับต้องไม่ได้ เช่น ภาษา กฎหมาย ความเชื่อ ประเพณี ศีลธรรม"},
+      {q:"ข้อใดเป็นแนวคิดสำคัญของ \"ปรัชญาเศรษฐกิจพอเพียง\"?", c:["การพึ่งพาตนเอง ความพอประมาณ ความมีเหตุผล และการมีภูมิคุ้มกัน", "การเร่งผลิตสินค้าเพื่อส่งออกให้มากที่สุด", "การกู้ยืมเงินเพื่อนำมาลงทุนในธุรกิจความเสี่ยงสูง", "การปฏิเสธการใช้เทคโนโลยีสมัยใหม่ทุกประเภท"], a:0, e:"ปรัชญาเศรษฐกิจพอเพียงมุ่งเน้น 3 ห่วง (พอประมาณ, มีเหตุผล, มีภูมิคุ้มกัน) บน 2 เงื่อนไข (ความรู้ และ คุณธรรม) เพื่อการดำรงชีวิตอย่างยั่งยืน"},
+    ],
+    thai: [
+      {q:"ข้อใดจัดเป็น \"พยัญชนะไทย\" ที่เป็นอักษรกลางทั้งหมด?", c:["ก, ข, ค, ง", "ก, จ, ด, ต", "ข, ฉ, ถ, ผ", "ค, ง, ช, ซ"], a:1, e:"อักษรกลางมี 9 ตัว ได้แก่ ก, จ, ด, ต, ฎ, ฏ, บ, ป, อ (ท่อง: ไก่จิกเด็กตายบนปากโอ่ง)"},
+      {q:"คำว่า \"กระเป๋า\" มีระดับเสียงวรรณยุกต์ตรงกับข้อใด?", c:["สามัญ - เอก", "เอก - จัตวา", "โท - ตรี", "จัตวา - จัตวา"], a:1, e:"\"กระ\" เป็นคำตายสระเสียงสั้นอักษรกลาง ออกเสียงเอก ส่วน \"เป๋า\" อักษรกลางรูปจัตวา ออกเสียงจัตวา"},
+      {q:"ข้อใดเป็น \"คำประสม\"?", c:["บ้านเรือน", "พ่อแม่", "พัดลม", "เสื่อผ้าม่าน"], a:2, e:"คำประสม คือการนำคำที่มีความหมายต่างกันมารวมกันเกิดความหมายใหม่ (\"พัด\" + \"ลม\" = เครื่องใช้ไฟฟ้าทำความเย็น) ส่วน บ้านเรือน พ่อแม่ เป็นคำซ้อน"},
+      {q:"ข้อใดมีคำซ้อนเพื่อความหมาย?", c:["เจ็บปวด", "ดำๆ แดงๆ", "วิ่งๆ เดินๆ", "นกนก"], a:0, e:"\"เจ็บ\" และ \"ปวด\" มีความหมายคล้ายคลึงกัน นำมารวมกันเป็นคำซ้อนเพื่อความหมาย ส่วนข้ออื่นเป็นคำซ้ำ"},
+      {q:"ประโยคในข้อใดเป็น \"ประโยคความซ้อน\" (สังกรประโยค)?", c:["ฉันชอบกินข้าวผัดและก๋วยเตี๋ยว", "น้องร้องไห้เพราะหกล้ม", "คุณครูบอกว่านักเรียนต้องตั้งใจเรียน", "พ่ออ่านหนังสือพิมพ์ แต่มารดาทำอาหาร"], a:2, e:"มีประโยคหลักคือ \"คุณครูบอก\" และประโยคย่อยคือ \"นักเรียนต้องตั้งใจเรียน\" ทำหน้าที่เป็นกรรม เชื่อมด้วยคำว่า \"ว่า\""},
+      {q:"คำราชาศัพท์ข้อใดแปลว่า \"พระเนตร\"?", c:["หู", "ตา", "จมูก", "ปาก"], a:1, e:"พระเนตร แปลว่า ตา (พระกรรณ = หู, พระนาสิก = จมูก, พระโอษฐ์ = ปาก)"},
+      {q:"คำราชาศัพท์ที่ใช้เรียก \"กิน\" สำหรับพระมหากษัตริย์คือคำใด?", c:["เสวย", "ฉัน", "รับประทาน", "บริโภค"], a:0, e:"\"เสวย\" ใช้กับพระมหากษัตริย์และพระบรมวงศานุวงศ์ ส่วน \"ฉัน\" ใช้กับพระภิกษุสงฆ์"},
+      {q:"ข้อใดเขียนสะกดคำได้ถูกต้องทั้งหมด?", c:["อนุญาต, สังเกต", "อนุญาติ, สังเกตุ", "อนุญาต, สังเกตุ", "อนุญาติ, สังเกต"], a:0, e:"คำว่า \"อนุญาต\" และ \"สังเกต\" ไม่มี สระ อิ บน ต.เต่า (จำง่ายๆ: อนุญาต ไม่มี ญาติ)"},
+      {q:"สุภาษิตในข้อใดมีความหมายตรงกับ \"ทำความดีแต่ไม่มีใครเห็น\"?", c:["ขี่ช้างจับตักแตน", "ปิดทองหลังพระ", "เข็นครกขึ้นภูเขา", "ไก่เห็นเท้างู งูเห็นนมไก่"], a:1, e:"\"ปิดทองหลังพระ\" หมายถึง การทำความดีโดยไม่หวังผลตอบแทนและไม่จำเป็นต้องให้ผู้อื่นรับรู้"},
+      {q:"สำนวน \"เข็นครกขึ้นภูเขา\" มีความหมายตรงกับข้อใด?", c:["ทำงานที่ง่ายดาย", "ทำงานที่ยากลำบากเกินความสามารถ", "ทำสิ่งที่ไม่เกิดประโยชน์", "ทำความดีอย่างสม่ำเสมอ"], a:1, e:"เข็นครกซึ่งหนักขึ้นที่สูง ต้องใช้ความพยายามอย่างมากและยากลำบากอย่างยิ่ง"},
+      {q:"สำนวนใดหมายถึง \"ต่างฝ่ายต่างรู้ความลับของกันและกัน\"?", c:["กระต่ายตื่นตระหนก", "ไก่เห็นเท้างู งูเห็นนมไก่", "ช้างตายทั้งตัวเอาใบบัวปิด", "น้ำพึ่งเรือเสือพึ่งป่า"], a:1, e:"ไก่และงูต่างรู้ความลับหรือเล่ห์เหลี่ยมของอีกฝ่ายเป็นอย่างดี"},
+      {q:"คำสรรพนามในข้อใดจัดเป็น \"บุรุษสรรพนามที่ 2\"?", c:["ฉัน", "ท่าน (ผู้ฟัง)", "เขา", "มัน"], a:1, e:"สรรพนามบุรุษที่ 1 แทนผู้พูด (ฉัน), บุรุษที่ 2 แทนผู้ฟัง (คุณ, ท่าน), บุรุษที่ 3 แทนผู้ที่กล่าวถึง (เขา, มัน)"},
+      {q:"ข้อใดเป็น \"คำสมาส\"?", c:["รถเก๋ง", "ผลไม้", "ประวัติศาสตร์", "กระดาษ"], a:2, e:"คำสมาสคือการนำคำภาษาบาลี-สันสกฤตตั้งแต่ 2 คำขึ้นไปมารวมกัน (ประวัติ + ศาสตร์)"},
+      {q:"ข้อใดเป็น \"คำสนธิ\"?", c:["ราชการ", "สุขาภิบาล", "วิทยาศาสตร์", "ศิลปกรรม"], a:1, e:"เกิดจากการกลมกลืนเสียงระหว่างคำ บาลี/สันสกฤต \"สุข\" + \"อภิบาล\" เป็น \"สุขาภิบาล\""},
+      {q:"คำประพันธ์ประเภท \"กลอนสี่\" 1 บท มีกี่วรรค?", c:["2 วรรค", "4 วรรค", "6 วรรค", "8 วรรค"], a:1, e:"กลอน 1 บทมาตรฐานจะมี 4 วรรค ได้แก่ วรรคสดับ วรรครับ วรรครอง และวรรคส่ง"},
+      {q:"ข้อใดไม่ใช่คุณค่าทางวรรณศิลป์?", c:["การใช้ภาพพจน์", "การเล่นเสียงสัมผัส", "การสอดแทรกข้อคิดประวัติศาสตร์", "การเลือกใช้คำที่ส่งผลต่ออารมณ์"], a:2, e:"การสอดแทรกประวัติศาสตร์เป็นคุณค่าทางสังคมหรือเนื้อหา ไม่ใช่คุณค่าทางวรรณศิลป์ (งดงามทางภาษา)"},
+      {q:"ประโยค \"ฝนตกหนักจนน้ำท่วมขัง\" คำว่า \"จน\" ทำหน้าที่เป็นคำชนิดใด?", c:["คำสันธาน", "คำบุพบท", "คำวิเศษณ์", "คำกริยา"], a:0, e:"ทำหน้าที่เชื่อมประโยคเหตุและผลเข้าด้วยกัน (\"ฝนตกหนัก\" กับ \"น้ำท่วมขัง\")"},
+      {q:"ข้อใดมีคำที่มาจากภาษาเขมร?", c:["เค้ก", "ถนน", "ฟรี", "บาป"], a:1, e:"\"ถนน\" เป็นคำที่ยืมมาจากภาษาเขมร (เค้ก/ฟรี มาจากอังกฤษ, บาป มาจากบาลี-สันสกฤต)"},
+      {q:"ข้อใดเป็นความหมายตรงของคำว่า \"เก้าอี้\"?", c:["ตำแหน่งงาน", "ที่สำหรับนั่ง มีขาและที่รองรับ", "อำนาจการบริหาร", "ยศถาบรรดาศักดิ์"], a:1, e:"ความหมายตรงคือเฟอร์นิเจอร์สำหรับนั่ง ส่วนความหมายเปรียบเทียบหมายถึง ตำแหน่ง"},
+      {q:"การพูดในข้อใดเป็นการพูดที่เป็นทางการมากที่สุด?", c:["การคุยกับเพื่อนในห้องเรียน", "การกล่าวรายงานหน้าชั้นเรียน", "การเล่าเรื่องให้ครอบครัวฟัง", "การทักทายคนรู้จักที่ตลาด"], a:1, e:"การกล่าวรายงานหน้าชั้นเรียนเป็นการพูดต่อหน้าสาธารณะที่มีรูปแบบและภาษาเป็นระเบียบชัดเจน"},
+      {q:"สำนวน \"กิ้งก่าได้ทอง\" หมายความว่าอย่างไร?", c:["คนที่ได้รับโชคใหญ่", "คนเย่อหยิ่งพองลม", "คนที่ได้ลาภยศแล้วเย่อหยิ่งลืมตัว", "คนที่ทำตัวร่ำรวยเกินจริง"], a:2, e:"หมายถึง คนที่เคยยากจนหรือไม่มีความสำคัญ เมื่อได้ดีมีทรัพย์ก็เกิดความเย่อหยิ่งลืมตน"},
+      {q:"วรรณคดีเรื่อง \"นิราศภูเขาทอง\" เป็นผลงานการแต่งของท่านใด?", c:["พระบาทสมเด็จพระพุทธเลิศหล้านภาลัย", "สุนทรภู่", "เจ้าพระยาพระคลัง (หน)", "พระบาทสมเด็จพระมงกุฎเกล้าเจ้าอยู่หัว"], a:1, e:"สุนทรภู่เป็นแต่งนิราศภูเขาทองขณะบวชเป็นพระ เดินทางไปเจดีย์ภูเขาทองที่จังหวัดพระนครศรีอยุธยา"},
+      {q:"การเขียน \"จดหมายลากิจ\" ควรส่งถึงใคร?", c:["ผู้ปกครอง", "ครูประจำชั้น/ครูผู้สอน", "ผู้อำนวยการโรงเรียน", "ภารโรง"], a:1, e:"ในระดับนักเรียน จดหมายลากิจหรือลาป่วยต้องจ่าหน้าและส่งถึงครูประจำชั้นหรือครูผู้สอนโดยตรง"},
+      {q:"คำว่า \"แพทย์\" อ่านออกเสียงอย่างไร?", c:["แพด", "แพด-ทะ-ยะ", "แพ-ทะ-ยะ", "แพด-ยิ"], a:0, e:"คำว่า \"แพทย์\" มี ย เป็นตัวการันต์ จึงไม่ออกเสียง อ่านพยางค์เดียวว่า \"แพด\""},
+      {q:"โคลนติดล้อ ตอน \"ความนิยมเป็นข้าราชการ\" เป็นพระราชนิพนธ์ในรัชกาลใด?", c:["รัชกาลที่ 4", "รัชกาลที่ 5", "รัชกาลที่ 6", "รัชกาลที่ 7"], a:2, e:"เป็นบทพระราชนิพนธ์ในพระบาทสมเด็จพระมงกุฎเกล้าเจ้าอยู่หัว (รัชกาลที่ 6) โดยใช้นามแฝงว่า \"อัศวพาหุ\""},
+      {q:"ข้อใดใช้คำอุทานสื่ออารมณ์ \"ตกใจ\"?", c:["อนิจจา! น่าสงสารจริง", "อุ๊ย! ตกใจหมดเลย", "ไชโย! เราชนะแล้ว", "เอ๊ะ! นั่นใครกัน"], a:1, e:"\"อุ๊ย\" เป็นคำอุทานแสดงความตกใจ (อนิจจา = สงสารสังเวช, ไชโย = ดีใจ, เอ๊ะ = สงสัย)"},
+      {q:"คำบาลี-สันสกฤตที่นำมาใช้ในภาษาไทย คำใดหมายถึง \"ดวงอาทิตย์\"?", c:["นภา", "อาทิตย์ / สุริยะ", "จันทรา", "คงคา"], a:1, e:"อาทิตย์/สุริยะ = ดวงอาทิตย์ (นภา = ท้องฟ้า, จันทรา = ดวงจันทร์, คงคา = แม่น้ำ)"},
+      {q:"การสรุปความจากเรื่องที่อ่าน ควรปฏิบัติตามข้อใดเป็นอันดับแรก?", c:["ตั้งใจอ่านเรื่องให้เข้าใจตั้งแต่ต้นจนจบ", "เขียนร่างสรุปทันที", "ถ่ายทอดด้วยภาษาของตนเอง", "ตรวจสอบอักขระวิธี"], a:0, e:"ขั้นตอนแรกของการจับใจความหรือสรุปความ คือการอ่านเนื้อหาทั้งหมดให้รอบคอบก่อน"},
+      {q:"เครื่องหมายอัญประกาศ \"...\" มีไว้สำหรับใช้ทำอะไร?", c:["ละข้อความ", "เน้นคำหรือข้อความที่เป็นคำพูด", "อธิบายขยายความ", "คั่นรายการคำ"], a:1, e:"เครื่องหมายอัญประกาศ (อัญพจน์) ใช้ครอบข้อความที่เป็นคำพูด คำโควต หรือคำอ้างอิง"},
+      {q:"ข้อใดเป็นประโยคคำถามที่ต้องการคำตอบ?", c:["เธอจะไปไหนก็เรื่องของเธอ", "ใครๆ ก็ชอบคนดี", "ใครมาหาฉันเมื่อเช้านี้?", "อะไรก็ได้ฉันกินได้หมด"], a:2, e:"ข้อ 3 เป็นคำถามปรัศนีที่ต้องการคำตอบจริง ส่วนข้ออื่นเป็นสรรพนามไม่ชี้เฉพาะ (อนิยมสรรพนาม)"},
+    ],
+  },
+  senior: {
+    sci: [
+      {q:"กระบวนการแบ่งเซลล์แบบไมโอซิส (Meiosis) มีความสำคัญอย่างไรต่อสิ่งมีชีวิต?", c:["เพื่อการเจริญเติบโตและซ่อมแซมส่วนที่สึกหรอ", "เพื่อสร้างเซลล์ร่างกายที่มีจำนวนโครโมโซมเท่าเดิม", "เพื่อสร้างเซลล์สืบพันธุ์และลดจำนวนโครโมโซมลงครึ่งหนึ่ง", "เพื่อเพิ่มจำนวนเซลล์แบคทีเรียอย่างรวดเร็ว"], a:2, e:"ไมโอซิสเป็นการแบ่งเซลล์เพื่อสร้างเซลล์สืบพันธุ์ โดยลดจำนวนโครโมโซมจากดิพลอยด์ ($2n$) เหลือแฮพลอยด์ ($n$) ส่วนการแบ่งแบบไมโทซิสใช้สำหรับการเจริญเติบโต"},
+      {q:"ข้อใดกล่าวถึงกระบวนการสังเคราะห์ด้วยแสงในปฏิกิริยาแสง (Light reaction) ได้ถูกต้อง?", c:["เกิดขึ้นบริเวณสโตรมา (Stroma) ของคลอโรพลาสต์", "มีการตรึงคาร์บอนไดออกไซด์เพื่อสร้างน้ำตาล", "เกิดการแตกตัวของน้ำ ($H_2O$) ได้เป็นแก๊สออกซิเจน ($O_2$)", "ไม่จำเป็นต้องใช้พลังงานแสงอาทิตย์ในการขับเคลื่อน"], a:2, e:"ปฏิกิริยาแสงเกิดขึ้นที่ไทลาคอยด์ (Thylakoid) โดยใช้พลังงานแสงในการแตกตัวของน้ำ (Photolysis) ได้ $O_2$, ATP และ $NADPH$ ส่วนการตรึง $CO_2$ เกิดขึ้นในวัฏจักรแคลวินที่สโตรมา"},
+      {q:"ฮอร์โมนใดจากต่อมหมวกไตชั้นนอกมีหน้าที่หลักในการรักษาสมดุลของโซเดียมและโพแทสเซียมในร่างกาย?", c:["คอร์ติซอล (Cortisol)", "อัลโดสเตอรอง (Aldosterone)", "อะดรีนาลีน (Adrenaline)", "อินซูลิน (Insulin)"], a:1, e:"อัลโดสเตอรองทำหน้าที่กระตุ้นการดูดกลับของโซเดียมและน้ำที่ท่อหน่วยไต และขับโพแทสเซียมออกจากร่างกาย เพื่อรักษาความดันเลือดและสมดุลแร่ธาตุ"},
+      {q:"ข้อใดคือความแตกต่างระหว่าง DNA และ RNA?", c:["DNA มีน้ำตาลไรโบส ส่วน RNA มีน้ำตาลดีออกซีไรโบส", "DNA มีเบส Uracil (U) ส่วน RNA มีเบส Thymine (T)", "DNA มักมีสายคู่พันเป็นเกลียว ส่วน RNA มักมีสายเดี่ยว", "DNA พบเฉพาะในไซโทพลาซึม ส่วน RNA พบเฉพาะในนิวเคลียส"], a:2, e:"DNA ประกอบด้วยน้ำตาลดีออกซีไรโบส มีเบส A, T, C, G และมีโครงสร้างสายคู่ ส่วน RNA มีน้ำตาลไรโบส มีเบส A, U, C, G และมักเป็นสายเดี่ยว"},
+      {q:"โครงสร้างใดในหัวใจมนุษย์ทำหน้าที่ป้องกันไม่ให้เลือดไหลย้อนกลับจากเวนตริเคิลซ้ายไปยังเอเทรียมซ้าย?", c:["ลิ้นไตรคัสปิด (Tricuspid valve)", "ลิ้นไบคัสปิด (Bicuspid/Mitral valve)", "ลิ้นพัลโมนารีเซมิลูนาร์ (Pulmonary semilunar valve)", "ลิ้นเอออร์ติกเซมิลูนาร์ (Aortic semilunar valve)"], a:1, e:"ลิ้นไบคัสปิด (หรือไมทรัล) กั้นระหว่างหัวใจห้องบนซ้าย (Left atrium) และห้องล่างซ้าย (Left ventricle) เพื่อป้องกันเลือดไหลย้อนกลับ"},
+      {q:"การจัดเรียงอิเล็กตรอนของธาตุที่มีเลขอะตอม 20 คือข้อใด?", c:["$2, 8, 10$", "$2, 8, 8, 2$", "$2, 8, 9, 1$", "$2, 18, 0$"], a:1, e:"ธาตุที่มีเลขอะตอม 20 (แคลเซียม) จัดเรียงอิเล็กตรอนในระดับพลังงานหลักเป็น $K=2, L=8, M=8, N=2$ อยู่หมู่ 2 คาบ 4"},
+      {q:"พันธะเคมีชนิดใดเกิดจากการนำอิเล็กตรอนมาใช้ร่วมกันระหว่างอโลหะกับอโลหะ?", c:["พันธะไอออนิก", "พันธะโคเวเลนต์", "พันธะโลหะ", "พันธะไฮโดรเจน"], a:1, e:"พันธะโคเวเลนต์เกิดจากอะตอมของธาตุอโลหะกับอโลหะนำเวเลนซ์อิเล็กตรอนมาใช้อ่านร่วมกันเพื่อให้ครบแปดตามกฎออกเตต"},
+      {q:"สารละลาย $HCl$ เข้มข้น $0.01 \\text{ M}$ จะมีค่า pH เท่าใด?", c:["1", "2", "12", "14"], a:1, e:"$HCl$ เป็นกรดแก่ แตกตัวได้ $100\\%$ ดังนั้น $[H^+] = 0.01 = 10^{-2} \\text{ M}$ ค่า $\\text{pH} = -\\log[H^+] = -\\log(10^{-2}) = 2$"},
+      {q:"ตามทฤษฎีกรด-เบสของเบรินสเตด-เลารี (Brønsted-Lowry) กรดคือสารที่ทำหน้าที่อย่างไร?", c:["สารที่ละลายน้ำแล้วให้ $H^+$", "สารที่ละลายน้ำแล้วให้ $OH^-$", "สารที่ให้โปรตอน ($H^+$) แก่สารอื่น", "สารที่รับโปรตอน ($H^+$) จากสารอื่น"], a:2, e:"ทฤษฎีเบรินสเตด-เลารี นิยามว่า \"กรดคือสารที่ให้โปรตอน ($H^+$ proton donor)\" และ \"เบสคือสารที่รับโปรตอน ($H^+$ proton acceptor)\""},
+      {q:"การทดลองหาปริมาณวิเคราะห์โดยการไทเทรตระหว่างกรดแก่กับเบสอ่อน ควรเลือกใช้ตัวบ่งชี้ (Indicator) ข้อใดที่มีช่วง pH เหมาะสม?", c:["ฟีนอล์ฟทาเลอีน (ช่วง pH 8.3 - 10.0)", "เมทิลเรด (ช่วง pH 4.4 - 6.2)", "บรอมไทมอลบลู (ช่วง pH 6.0 - 7.6)", "อะลิซารินเยลโลว์ (ช่วง pH 10.1 - 12.0)"], a:1, e:"ปฏิกิริยาระหว่างกรดแก่กับเบสอ่อน จุดสมมูลจะมีสภาพเป็นกรด ($\\text{pH} < 7$) จึงต้องเลือกอินดิเคเตอร์ที่มีช่วงการเปลี่ยนสีในภาวะกรด เช่น เมทิลเรด"},
+      {q:"วัตถุมวล $2 \\text{ kg}$ ถูกแรง $10 \\text{ N}$ กระทำในแนวราบบนพื้นลื่น วัตถุจะเคลื่อนที่ด้วยความเร่งเท่าใด?", c:["$0.2 \\text{ m/s}^2$", "$5 \\text{ m/s}^2$", "$8 \\text{ m/s}^2$", "$20 \\text{ m/s}^2$"], a:1, e:"จากกฎข้อที่สองของนิวตัน $\\sum F = ma \\Rightarrow 10 = 2 \\times a \\Rightarrow a = 5 \\text{ m/s}^2$"},
+      {q:"ปล่อยวัตถุตกแบบเสรีภายใต้แรงโน้มถ่วงของโลก (กำหนด $g = 10 \\text{ m/s}^2$) เมื่อเวลาผ่านไป $3 \\text{ วินาที}$ วัตถุจะมีความเร็วเท่าใด?", c:["$3 \\text{ m/s}$", "$15 \\text{ m/s}$", "$30 \\text{ m/s}$", "$45 \\text{ m/s}$"], a:2, e:"ปล่อยตกเสรีความเร็วต้น $u = 0$ จาก $v = u + gt \\Rightarrow v = 0 + (10)(3) = 30 \\text{ m/s}$"},
+      {q:"งานที่เกิดขึ้นเมื่อแรง $50 \\text{ N}$ ดึงวัตถุให้เคลื่อนที่ตามแนวแรงเป็นระยะทาง $4 \\text{ เมตร}$ มีค่าเท่าใด?", c:["$12.5 \\text{ J}$", "$46 \\text{ J}$", "$54 \\text{ J}$", "$200 \\text{ J}$"], a:3, e:"สูตรงาน $W = F \\cdot s = 50 \\times 4 = 200 \\text{ จูล}$"},
+      {q:"ประจุไฟฟ้า $Q_1 = +2 \\mu\\text{C}$ และ $Q_2 = +8 \\mu\\text{C}$ วางห่างกันระยะหนึ่ง แรงระหว่างประจุทั้งสองจะมีลักษณะอย่างไร?", c:["แรงดึงดูดซึ่งกันและกัน", "แรงผลักซึ่งกันและกัน", "ไม่มีแรงกระทำต่อกัน", "หมุนรอบกันและกัน"], a:1, e:"ตามกฎของคูลอมบ์ ประจุไฟฟ้าชนิดเดียวกัน (บวกเหมือนกัน) จะเกิดแรงผลักกัน ส่วนประจุต่างชนิดกันจะดึงดูดกัน"},
+      {q:"คลื่นตามยาว (Longitudinal wave) ต่างจากคลื่นตามขวาง (Transverse wave) อย่างไร?", c:["คลื่นตามยาวไม่อาศัยตัวกลางในการเคลื่อนที่", "อนุภาคของตัวกลางสั่นในแนวเดียวกับการเคลื่อนที่ของคลื่น", "อนุภาคของตัวกลางสั่นตั้งฉากกับแนวการเคลื่อนที่ของคลื่น", "คลื่นตามยาวเป็นคลื่นแม่เหล็กไฟฟ้าเท่านั้น"], a:1, e:"คลื่นตามยาว อนุภาคของตัวกลางจะสั่นในแนวขนานหรือแนวเดียวกับทิศทางเคลื่อนที่ของคลื่น (เช่น คลื่นเสียง) ส่วนคลื่นตามขวางจะสั่นตั้งฉาก (เช่น คลื่นในเส้นเชือก คลื่นแสง)"},
+      {q:"ดาวฤกษ์ที่มีอุณหภูมิพื้นผิวสูงที่สุดจะมีสีใดตามการจัดประเภทสเปกตรัม?", c:["สีแดง", "สีเหลือง", "สีขาว", "สีน้ำเงิน"], a:3, e:"ลำดับอุณหภูมิพื้นผิวของดาวฤกษ์จากสูงไปต่ำตามชนิดสเปกตรัม O B A F G K M คือ น้ำเงิน > ขาวน้ำเงิน > ขาว > ขาวเหลือง > เหลือง > ส้ม > แดง"},
+      {q:"ดาราจักรทางช้างเผือก (Milky Way Galaxy) จัดเป็นดาราจักรประเภทใด?", c:["ดาราจักรไร้รูปแบบ (Irregular Galaxy)", "ดาราจักรทรงกลมกังหัน (Elliptical Galaxy)", "ดาราจักรแบบกังหันมีแกน (Barred Spiral Galaxy)", "ดาราจักรแบบลูกข่าง (Lenticular Galaxy)"], a:2, e:"จากข้อมูลการสำรวจดาราศาสตร์ในปัจจุบัน ทางช้างเผือกจัดเป็นดาราจักรแบบกังหันมีแกน (SBb)"},
+      {q:"กระบวนการเทกโทนิกส์ที่แผ่นเปลือกโลกมหาสมุทรเคลื่อนที่เข้าหาแผ่นเปลือกโลกทวีปจะก่อให้เกิดโครงสร้างทางธรณีวิทยาแบบใด?", c:["ร่องลึกก้นสมุทร (Trench) และแนวเทือกเขาภูเขาไฟ", "สันเขาใต้สมุทร (Mid-ocean ridge)", "หุบเขาทรุด (Rift valley)", "รอยเลื่อนตามแนวระดับ (Transform fault)"], a:0, e:"เมื่อแผ่นมหาสมุทร (หนาแน่นกว่า) มุดลงใต้แผ่นทวีป จะเกิดร่องลึกก้นสมุทรตรงบริเวณการมุด และเกิดแนวภูเขาไฟระเบิดบนแผ่นทวีป"},
+      {q:"คลื่นไหวสะเทือนชนิดใดเป็นคลื่นในตัวกลางที่สามารถเดินทางผ่านได้เฉพาะ \"ของแข็ง\" เท่านั้น?", c:["คลื่นปฐมภูมิ (P-wave)", "คลื่นทุติยภูมิ (S-wave)", "คลื่นเลิฟ (Love wave)", "คลื่นเรย์ลี (Rayleigh wave)"], a:1, e:"คลื่น S เป็นคลื่นตามขวางที่ผ่านได้เฉพาะของแข็ง จึงไม่สามารถผ่านแก่นโลกชั้นนอกที่เป็นของเหลวได้ ต่างจากคลื่น P ที่ผ่านได้ทุกสถานะ"},
+      {q:"ปรากฏการณ์เอลนีโญ (El Niño) ส่งผลกระทบต่อภูมิอากาศของประเทศไทยอย่างไร?", c:["เกิดฝนตกหนักและน้ำท่วมขังรุนแรง", "อุณหภูมิเฉลี่ยลดลงอย่างรวดเร็วและเกิดหิมะตก", "ปริมาณฝนลดลง สภาพอากาศแห้งแล้งและอุณหภูมิสูงขึ้น", "เกิดพายุหมุนงวงช้างบ่อยครั้งขึ้น"], a:2, e:"เอลนีโญทำให้ลมค้าอ่อนกำลังลง น้ำอุ่นไหลไปทางตะวันออกของแปซิฟิก ฝั่งตะวันตก (รวมถึงไทยและอาเซียน) จึงเกิดความแห้งแล้งและฝนน้อยกว่าปกติ"},
+      {q:"กระบวนการสังเคราะห์โปรตีนในเซลล์ ขั้นตอนการถอดรหัส (Transcription) เกิดขึ้นที่บริเวณใด?", c:["ไรโบโซม", "นิวเคลียส", "กอลจิบอดี้", "เอนโดพลาสมิกเรติคูลัม"], a:1, e:"Transcription คือการสังเคราะห์ mRNA จากสาย DNA แม่แบบ เกิดขึ้นภายในนิวเคลียส จากนั้น mRNA จะถูกส่งออกไปยังไซโทพลาซึมเพื่อแปลรหัส (Translation) ที่ไรโบโซม"},
+      {q:"ข้อใดเป็นกฎข้อที่ 1 ของเมนเดล (Law of Segregation)?", c:["ยีนที่อยู่เป็นคู่จะแยกออกจากกันเข้าสู่เซลล์สืบพันธุ์แต่ละเซลล์", "ยีนต่างคู่กันจะจัดกลุ่มอย่างอิสระในการสร้างเซลล์สืบพันธุ์", "ลักษณะเด่นจะข่มลักษณะด้อยอย่างสมบูรณ์เสมอ", "โครโมโซมคู่เหมือนจะแลกเปลี่ยนชิ้นส่วนกันขณะแบ่งเซลล์"], a:0, e:"กฎการแยกตัว (Law of Segregation) ระบุว่าแอลลีลที่อยู่เป็นคู่จะแยกออกจากกันระหว่างการสร้างเซลล์สืบพันธุ์ ทำให้เซลล์สืบพันธุ์มีแอลลีลเพียง 1 แอลลีลต่อยีน"},
+      {q:"กระบวนการหายใจระดับเซลล์ในขั้นต้อนใดที่สร้างพลังงาน ATP ได้จำนวนมากที่สุด?", c:["ไกลโคลิซิส (Glycolysis)", "การสร้างแอซีติลโคเอนไซม์ เอ", "วัฏจักรเครบส์ (Krebs cycle)", "ระบบขนส่งอิเล็กตรอน (Electron Transport Chain)"], a:3, e:"ระบบขนส่งอิเล็กตรอนที่เยื่อหุ้มชั้นในของไมโทคอนเดรียสามารถสร้าง ATP ได้ประมาณ 28–32 โมเลกุลต่อการสลายกลูโคส 1 โมเลกุล ซึ่งมากที่สุดในทุกขั้นตอน"},
+      {q:"สารกึ่งตัวนำ (Semiconductor) ชนิด P-type ได้จากการโดป (Doping) ธาตุบริสุทธิ์ด้วยธาตุหมู่ใด?", c:["หมู่ III", "หมู่ IV", "หมู่ V", "หมู่ VI"], a:0, e:"การโดปธาตุหมู่ III (เช่น B, Al, Ga) ลงในสารกึ่งตัวนำหมู่ IV (เช่น Si, Ge) จะทำให้เกิดขาดอิเล็กตรอนหรือเกิด \"โฮล\" (Hole) ซึ่งเป็นพาหะนำไฟฟ้าหลัก จึงได้สาร P-type"},
+      {q:"อัตราการเกิดปฏิกิริยาเคมีจะเพิ่มขึ้นเมื่อมีการเติม \"ตัวเร่งปฏิกิริยา\" (Catalyst) เนื่องจากตัวเร่งทำหน้าที่อย่างไร?", c:["เพิ่มพลังงานก่อกัมมันต์ ($E_a$)", "ลดพลังงานก่อกัมมันต์ ($E_a$)", "เพิ่มความร้อนของปฏิกิริยา ($\\Delta H$)", "ลดความดันภายในระบบปฏิกิริยา"], a:1, e:"ตัวเร่งปฏิกิริยาช่วยจัดเส้นทางการเกิดปฏิกิริยาใหม่ที่มีพลังงานก่อกัมมันต์ ($E_a$) ต่ำลง ทำให้สารตั้งต้นเปลี่ยนเป็นผลิตภัณฑ์ได้เร็วขึ้น"},
+      {q:"ไอโซโทปรังสีชนิดใดที่นิยมนำมาใช้ในการคำนวณหาอายุของซากสิ่งมีชีวิตและวัตถุโบราณทางโบราณคดี?", c:["โคบอลต์-60 ($^{60}\\text{Co}$)", "ไอโอดีน-131 ($^{131}\\text{I}$)", "คาร์บอน-14 ($^{14}\\text{C}$)", "ยูเรเนียม-238 ($^{238}\\text{U}$)"], a:2, e:"คาร์บอน-14 มีครึ่งชีวิตประมาณ 5,730 ปี เหมาะสำหรับการคำนวณหาอายุของสารอินทรีย์หรือซากสิ่งมีชีวิตโบราณ (Radiocarbon dating)"},
+      {q:"เมื่อลำแสงเลเซอร์ส่องผ่านช่องแคบคู่ (Double slit) ปรากฏการณ์ใดที่ทำให้เกิดแถบสว่างและแถบมืดบนฉากรับ?", c:["การสะท้อนและการหักเห", "การเลี้ยวเบนและการแทรกสอด", "การโพลาไรเซชัน", "การกระจายแสง"], a:1, e:"แสงเมื่อผ่านช่องแคบจะเกิดการเลี้ยวเบนออกมาเป็นแหล่งกำเนิดคลื่นอาพันธ์ แล้วเกิดการแทรกสอดแบบเสริม (แถบสว่าง) และแทรกสอดแบบหักล้าง (แถบมืด)"},
+      {q:"ข้อใดจัดเป็นโครงสร้างที่แสดงความสัมพันธ์แบบการวิวัฒนาการสายเดียวกันแต่ทำหน้าที่ต่างกัน (Homologous structures)?", c:["ปีกนก กับ ปีกแมลง", "แขนมนุษย์ กับ ครีบวาฬ", "ครีบปลา กับ ครีบโลมา", "ตาของมนุษย์ กับ ตาของหมึกยักษ์"], a:1, e:"Homologous structures มีกำเนิดและโครงสร้างกระดูกภายในเหมือนกัน แต่วิวัฒนาการไปทำหน้าที่ต่างกัน เช่น แขนมนุษย์ ขาหน้าสัตว์สี่เท้า ครีบวาฬ ปีกค้างคาว"},
+      {q:"กฎการอนุรักษ์พลังงานเชิงกลจะใช้ได้สมบูรณ์ในระบบที่มีลักษณะอย่างไร?", c:["มีแรงเสียดทานมาก", "มีเฉพาะแรงอนุรักษ์ (เช่น แรงโน้มถ่วง, แรงสปริง) ทำงาน", "มีการสูญเสียพลังงานในรูปความร้อนตลอดเวลา", "เป็นระบบเปิดที่มวลถ่ายเทได้"], a:1, e:"พลังงานกลรวม ($E = E_k + E_p$) จะมีค่าคงตัวก็ต่อเมื่อไม่มีงานจากแรงไม่อนุรักษ์ (เช่น แรงเสียดทาน, แรงต้านอากาศ) มากระทำต่อระบบ"},
+      {q:"แก๊สอุดมคติปริมาตร $V$ มีความดัน $P$ และอุณหภูมิ $T$ หากเพิ่มอุณหภูมิเคลวินเป็น 2 เท่า และลดปริมาตรลงเหลือครึ่งหนึ่ง ความดันใหม่จะเป็นกี่เท่าของความดันเดิม?", c:["$1$ เท่า", "$2$ เท่า", "$4$ เท่า", "$8$ เท่า"], a:2, e:"จากสมการแก๊สอุดมคติ $\\frac{P_1V_1}{T_1} = \\frac{P_2V_2}{T_2} \\Rightarrow \\frac{P \\cdot V}{T} = \\frac{P_2 \\cdot (0.5V)}{2T} \\Rightarrow P_2 = 4P$"},
+    ],
+    math: [
+      {q:"เซตคำตอบของอสมการ $|2x - 3| \\le 7$ คือช่วงใด?", c:["$[-2, 5]$", "$[-5, 2]$", "$(-\\infty, -2] \\cup [5, \\infty)$", "$[-2, 2]$"], a:0, e:"จาก $|2x - 3| \\le 7 \\Rightarrow -7 \\le 2x - 3 \\le 7 \\Rightarrow -4 \\le 2x \\le 10 \\Rightarrow -2 \\le x \\le 5$"},
+      {q:"กำหนดให้ $f(x) = 3x - 5$ จงหาฟังก์ชันผกผัน $f^{-1}(x)$", c:["$f^{-1}(x) = \\frac{x - 5}{3}$", "$f^{-1}(x) = \\frac{x + 5}{3}$", "$f^{-1}(x) = 5x - 3$", "$f^{-1}(x) = \\frac{1}{3x - 5}$"], a:1, e:"ให้ $y = 3x - 5 \\Rightarrow y + 5 = 3x \\Rightarrow x = \\frac{y + 5}{3}$ สลับตัวแปรได้ $f^{-1}(x) = \\frac{x + 5}{3}$"},
+      {q:"ค่าของ $\\log_2 32 + \\log_3 \\left(\\frac{1}{9}\\right)$ เท่ากับเท่าใด?", c:["3", "5", "7", "8"], a:0, e:"$\\log_2 32 = \\log_2 (2^5) = 5$ และ $\\log_3 (3^{-2}) = -2$ ผลรวม $= 5 + (-2) = 3$"},
+      {q:"ถ้าพจน์ที่ 1 ของลำดับเรขาคณิตคือ 3 และอัตราส่วนร่วม ($r$) เท่ากับ 2 แล้วพจน์ที่ 6 มีค่าเท่าใด?", c:["48", "96", "192", "384"], a:1, e:"จากสูตร $a_n = a_1 r^{n-1} \\Rightarrow a_6 = 3 \\times 2^{6-1} = 3 \\times 2^5 = 3 \\times 32 = 96$"},
+      {q:"ผลบวกของอนุกรมเลขาคณิตอนันต์ $1 + \\frac{1}{2} + \\frac{1}{4} + \\frac{1}{8} + \\dots$ มีค่าเท่าใด?", c:["1.5", "2", "2.5", "หาค่าไม่ได้เนื่องจากเป็นอนุกรมอนันต์"], a:1, e:"เป็นอนุกรมเรขาคณิตอนันต์ที่มี $a_1 = 1, r = \\frac{1}{2} < 1$ จากสูตร $S_\\infty = \\frac{a_1}{1 - r} = \\frac{1}{1 - 0.5} = 2$"},
+      {q:"เวกเตอร์ $\\vec{u} = 3\\hat{i} - 4\\hat{j}$ มีขนาด (Magnitude) เท่ากับเท่าใด?", c:["1", "5", "7", "25"], a:1, e:"ขนาดของเวกเตอร์ $|\\vec{u}| = \\sqrt{3^2 + (-4)^2} = \\sqrt{9 + 16} = \\sqrt{25} = 5$"},
+      {q:"ถ้า $\\sin \\theta = \\frac{3}{5}$ และ $\\theta$ อยู่ในควอดรันต์ที่ 1 แล้วค่าของ $\\cos \\theta$ และ $\\tan \\theta$ คือข้อใด?", c:["$\\cos \\theta = \\frac{4}{5}, \\tan \\theta = \\frac{3}{4}$", "$\\cos \\theta = \\frac{4}{5}, \\tan \\theta = \\frac{4}{3}$", "$\\cos \\theta = \\frac{3}{4}, \\tan \\theta = \\frac{4}{5}$", "$\\cos \\theta = -\\frac{4}{5}, \\tan \\theta = -\\frac{3}{4}$"], a:0, e:"สามเหลี่ยมมุมฉากมีด้านตรงข้ามยาว 3 ด้านตรงข้ามมุมฉากยาว 5 ด้านชิดยาว 4 ดังนั้น $\\cos \\theta = \\frac{4}{5}$ และ $\\tan \\theta = \\frac{3}{4}$"},
+      {q:"สมการวงกลมที่มีจุดศูนย์กลางอยู่ที่จุด $(0,0)$ และผ่านจุด $(3,4)$ คือข้อใด?", c:["$x^2 + y^2 = 5$", "$x^2 + y^2 = 7$", "$x^2 + y^2 = 25$", "$(x-3)^2 + (y-4)^2 = 25$"], a:2, e:"รัศมี $r = \\sqrt{(3-0)^2 + (4-0)^2} = 5$ สมการวงกลมคือ $x^2 + y^2 = r^2 \\Rightarrow x^2 + y^2 = 25$"},
+      {q:"ดิฟเฟอเรนชิเอตฟังก์ชัน $f(x) = 4x^3 - 5x^2 + 2x - 7$ ได้ผลลัพธ์ $f'(x)$ เป็นข้อใด?", c:["$12x^2 - 10x + 2$", "$4x^2 - 5x + 2$", "$12x^3 - 10x^2 + 2x$", "$x^4 - x^3 + x^2 - 7x$"], a:0, e:"ใช้สูตรดิฟ $\\frac{d}{dx}(x^n) = nx^{n-1} \\Rightarrow f'(x) = 4(3)x^2 - 5(2)x + 2(1) - 0 = 12x^2 - 10x + 2$"},
+      {q:"ค่าของลิมิต $\\lim_{x \\to 3} \\frac{x^2 - 9}{x - 3}$ เท่ากับเท่าใด?", c:["0", "3", "6", "หาค่าไม่ได้"], a:2, e:"แยกตัวประกอบตัวโมเลกุล $\\frac{(x-3)(x+3)}{x-3} = x+3$ เมื่อ $x \\to 3$ ได้ลิมิต $= 3 + 3 = 6$"},
+      {q:"อินทิกรัลไม่จำกัดเขต $\\int (6x^2 + 2x) \\, dx$ เท่ากับข้อใด?", c:["$12x + 2 + C$", "$2x^3 + x^2 + C$", "$3x^3 + 2x^2 + C$", "$6x^3 + 2x^2 + C$"], a:1, e:"จากสูตร $\\int x^n dx = \\frac{x^{n+1}}{n+1} + C \\Rightarrow 6\\left(\\frac{x^3}{3}\\right) + 2\\left(\\frac{x^2}{2}\\right) + C = 2x^3 + x^2 + C$"},
+      {q:"การจัดหมู่คน 4 คนจากกลุ่มคนทั้งหมด 6 คน สามารถทำได้กี่วิธี?", c:["15 วิธี", "24 วิธี", "30 วิธี", "360 วิธี"], a:0, e:"ใช้สูตรการจัดหมู่ $C(n,r) = \\frac{n!}{r!(n-r)!} \\Rightarrow C(6,4) = \\frac{6!}{4!2!} = \\frac{6 \\times 5}{2 \\times 1} = 15$ วิธี"},
+      {q:"ในการโยนเหรียญเที่ยงตรง 3 เหรียญพร้อมกัน ความน่าจะเป็นที่จะออกหัวอย่างน้อย 1 เหรียญ เป็นเท่าใด?", c:["$\\frac{1}{8}$", "$\\frac{3}{8}$", "$\\frac{7}{8}$", "$1$"], a:2, e:"เหตุการณ์ทั้งหมด $= 2^3 = 8$ แบบ เหตุการณ์ที่ไม่ไม่ออกหัวเลย (ออกก้อยหมด) มี 1 แบบ ความน่าจะเป็นที่จะออกหัวอย่างน้อย 1 ครั้ง $= 1 - \\frac{1}{8} = \\frac{7}{8}$"},
+      {q:"ข้อใดคือความสัมพันธ์ของเมทริกซ์สลับเปลี่ยน (Transpose) ของ $A = \\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\end{bmatrix}$?", c:["$A^T = \\begin{bmatrix} 4 & 3 \\\\ 2 & 1 \\end{bmatrix}$", "$A^T = \\begin{bmatrix} 1 & 3 \\\\ 2 & 4 \\end{bmatrix}$", "$A^T = \\begin{bmatrix} -1 & -2 \\\\ -3 & -4 \\end{bmatrix}$", "$A^T = \\begin{bmatrix} 2 & 1 \\\\ 4 & 3 \\end{bmatrix}$"], a:1, e:"เมทริกซ์สลับเปลี่ยน เกิดจากการเปลี่ยนแถวเป็นหลัก และเปลี่ยนหลักเป็นแถว"},
+      {q:"เดเทอร์มิแนนต์ (Determinant) ของเมทริกซ์ $B = \\begin{bmatrix} 5 & 2 \\\\ 3 & 4 \\end{bmatrix}$ มีค่าเท่าใด?", c:["14", "20", "26", "6"], a:0, e:"สำหรับเมทริกซ์ $2 \\times 2$, $\\det(B) = ad - bc = (5)(4) - (2)(3) = 20 - 6 = 14$"},
+      {q:"กำหนดให้เอกภพสัมพัทธ์ $U = \\{1, 2, 3, 4, 5, 6\\}$, $A = \\{1, 2, 3\\}$ และ $B = \\{3, 4, 5\\}$ สมาชิกของเซต $(A \\cup B)'$ คือข้อใด?", c:["$\\{3\\}$", "$\\{1, 2, 4, 5\\}$", "$\\{6\\}$", "$\\emptyset$"], a:2, e:"$A \\cup B = \\{1, 2, 3, 4, 5\\}$ ดังนั้น คอมพลีเมนต์ $(A \\cup B)' = U - (A \\cup B) = \\{6\\}$"},
+      {q:"ข้อใดเป็นนิเสธของประพจน์ \"สำหรับ $x$ ทุกตัว $x + 2 > 5$\" [$\\forall x [x + 2 > 5]$]?", c:["$\\forall x [x + 2 \\le 5]$", "$\\exists x [x + 2 \\le 5]$", "$\\exists x [x + 2 < 5]$", "$\\forall x [x + 2 = 5]$"], a:1, e:"นิเสธของ $\\forall x [P(x)]$ คือ $\\exists x [\\sim P(x)]$ และนิเสธของ $> 5$ คือ $\\le 5$"},
+      {q:"จำนวนวิธีในการจัดเรียงหนังสือต่างกัน 5 เล่มบนชั้นหนังสือเป็นแถวยาว มีกี่วิธี?", c:["5 วิธี", "25 วิธี", "120 วิธี", "720 วิธี"], a:2, e:"จำนวนวิธีเรียงสับเปลี่ยนสิ่งของ $n$ ชิ้นแบบเส้นตรง $= n! = 5! = 5 \\times 4 \\times 3 \\times 2 \\times 1 = 120$ วิธี"},
+      {q:"ถ้าขอบเขตล่างชั้นอุปทานของคะแนนสอบมีค่าเฉลี่ย ($\\mu$) เท่ากับ 50 และส่วนเบี่ยงเบนมาตรฐาน ($\\sigma$) เท่ากับ 10 คะแนน 30 คะแนน จะแปลงเป็นค่ามาตรฐาน ($z$-score) ได้เท่าใด?", c:["$-2$", "$-1$", "$1$", "$2$"], a:0, e:"จากสูตร $z = \\frac{x - \\mu}{\\sigma} \\Rightarrow z = \\frac{30 - 50}{10} = \\frac{-20}{10} = -2$"},
+      {q:"สมการไฮเพอร์โบลา $\\frac{x^2}{16} - \\frac{y^2}{9} = 1$ มีจุดยอด (Vertices) อยู่ที่จุดใด?", c:["$(\\pm 3, 0)$", "$(0, \\pm 3)$", "$(\\pm 4, 0)$", "$(0, \\pm 4)$"], a:2, e:"เป็นไฮเพอร์โบลาตามแนวแกน X ที่มีศูนย์กลางอยู่ที่ $(0,0)$ โดย $a^2 = 16 \\Rightarrow a = 4$ จุดยอดจึงเป็น $(\\pm a, 0) = (\\pm 4, 0)$"},
+      {q:"ข้อใดคือส่วนจินตภาพ (Imaginary part) ของจำนวนเชิงซ้อน $Z = (3 - 2i)(1 + 4i)$?", c:["3", "10", "11", "$-8$"], a:2, e:"กระจายคูณ $Z = 3(1) + 3(4i) - 2i(1) - 8i^2 = 3 + 12i - 2i - 8(-1) = (3+8) + (12-2)i = 11 + 10i$ ดังนั้น ส่วนจินตภาพคือ 10... อ๊ะ คูณใหม่: $3 + 12i - 2i + 8 = 11 + 10i$ ส่วนจินตภาพคือ 10 ขออภัย สรุปตอบข้อ 2. 10 * **เฉลย (ปรับใหม่ให้ถูกต้อง):** ตอบข้อ 2. 10 * **คำอธิบาย:** $Z = 3 + 12i - 2i - 8i^2 = 3 + 10i + 8 = 11 + 10i$ ดังนั้นส่วนจินตภาพ คือ $10$"},
+      {q:"ผลบวกของรากทั้งหมดของสมการ $x^2 - 6x + 8 = 0$ เท่ากับเท่าใด?", c:["$-6$", "$6$", "$-8$", "$8$"], a:1, e:"แยกปัจจัยได้ $(x-2)(x-4) = 0 \\Rightarrow x = 2, 4$ ผลบวกราก $= 2 + 4 = 6$ (หรือใช้สูตรผลบวกราก $-\\frac{b}{a} = -\\frac{-6}{1} = 6$)"},
+      {q:"เซตคำตอบของสมการ $2^{2x} - 5(2^x) + 4 = 0$ คือข้อใด?", c:["$\\{0, 2\\}$", "$\\{1, 4\\}$", "$\\{1, 2\\}$", "$\\{0, 4\\}$"], a:0, e:"ให้ $A = 2^x \\Rightarrow A^2 - 5A + 4 = 0 \\Rightarrow (A-1)(A-4) = 0 \\Rightarrow A = 1$ หรือ $4$ ถ้า $2^x = 1 \\Rightarrow x = 0$ และถ้า $2^x = 4 \\Rightarrow x = 2$ เซตคำตอบคือ $\\{0, 2\\}$"},
+      {q:"ถ้าเส้นตรง $L_1$ มีความชัน $m_1 = 2$ แล้วเส้นตรง $L_2$ ที่ตั้งฉากกับ $L_1$ จะมีความชันเท่าใด?", c:["2", "$-2$", "$\\frac{1}{2}$", "$-\\frac{1}{2}$"], a:3, e:"เส้นตรงสองเส้นตั้งฉากกันเมื่อผลคูณความชัน $m_1 \\times m_2 = -1 \\Rightarrow 2 \\times m_2 = -1 \\Rightarrow m_2 = -\\frac{1}{2}$"},
+      {q:"พจน์ทั่วไปของลำดับเลขคณิต $5, 9, 13, 17, \\dots$ คือข้อใด?", c:["$a_n = 4n + 1$", "$a_n = 4n + 5$", "$a_n = 5n - 1$", "$a_n = 5n + 4$"], a:0, e:"ลำดับเลขคณิตมี $a_1 = 5, d = 4$ จากสูตร $a_n = a_1 + (n-1)d = 5 + (n-1)4 = 5 + 4n - 4 = 4n + 1$"},
+      {q:"ค่าสูงสุดของฟังก์ชันจุดประสงค์ $P = 3x + 4y$ ภายใต้เงื่อนไขข้อจำกัดที่กำหนดจุดมุมของ क्षेत्रเป็น $(0,0), (4,0), (0,5),$ และ $(2,3)$ เท่ากับเท่าใด?", c:["12", "18", "20", "24"], a:2, e:"แทนจุดมุมใน $P$: ที่ $(0,0) \\Rightarrow P=0$, ที่ $(4,0) \\Rightarrow P=12$, ที่ $(0,5) \\Rightarrow P=20$, ที่ $(2,3) \\Rightarrow P=3(2)+4(3)=18$ ค่าสูงสุดคือ 20"},
+      {q:"พาราโบลา $y^2 = 12x$ มีจุดโฟกัส (Focus) อยู่ที่พิกัดใด?", c:["$(0, 3)$", "$(3, 0)$", "$(-3, 0)$", "$(0, -3)$"], a:1, e:"รูปแบบมาตรฐาน $y^2 = 4cx \\Rightarrow 4c = 12 \\Rightarrow c = 3$ เนื่องจากอ้อมแกน X เปิดขวา จุดโฟกัสอยู่ที่ $(c,0) = (3,0)$"},
+      {q:"พื้นที่ปิดล้อมด้วยเส้นโค้ง $y = x^2$ ตั้งแต่ $x = 0$ ถึง $x = 3$ มีค่ากี่ตารางหน่วย?", c:["3", "9", "18", "27"], a:1, e:"พื้นที่ $= \\int_0^3 x^2 \\, dx = \\left[ \\frac{x^3}{3} \\right]_0^3 = \\frac{27}{3} - 0 = 9$ ตารางหน่วย"},
+      {q:"ข้อใดเป็นตรรกบทสมมูล (Logically Equivalent) กับประพจน์ $p \\to q$?", c:["$q \\to p$", "$\\sim p \\to \\sim q$", "$\\sim q \\to \\sim p$", "$\\sim p \\wedge q$"], a:2, e:"ประพจน์เงื่อนไข $p \\to q$ สมมูลกับประพจน์แย้งสลับที่ (Contrapositive) คือ $\\sim q \\to \\sim p$ และยังสมมูลกับ $\\sim p \\vee q$"},
+      {q:"เมทริกซ์เอกลักษณ์ (Identity matrix) $I_2$ ขนาด $2 \\times 2$ คือข้อใด?", c:["$\\begin{bmatrix} 0 & 0 \\\\ 0 & 0 \\end{bmatrix}$", "$\\begin{bmatrix} 1 & 1 \\\\ 1 & 1 \\end{bmatrix}$", "$\\begin{bmatrix} 1 & 0 \\\\ 0 & 1 \\end{bmatrix}$", "$\\begin{bmatrix} 0 & 1 \\\\ 1 & 0 \\end{bmatrix}$"], a:2, e:"เมทริกซ์เอกลักษณ์คือเมทริกซ์จัตุรัสที่มีสมาชิกบนเส้นทแยงมุมหลักเป็น 1 ทั้งหมด และสมาชิกอื่นเป็น 0"},
+    ],
+    eng: [
+      {q:"Had I known about the traffic jam, I ______ another route.", c:["will take", "would take", "would have taken", "took"], a:2, e:"เป็นการละ If ในประโยคเงื่อนไขแบบที่ 3 (Third Conditional: Had + S + V.3, S + would have + V.3) แสดงเหตุการณ์สมมติในอดีต"},
+      {q:"The company's proposal was rejected because it was deemed completely ______.", c:["practical", "feasible", "Impractical", "Efficient"], a:2, e:"บริบทบอกว่าข้อเสนอถูกปฏิเสธ (rejected) เพราะถือว่าไม่สามารถนำไปปฏิบัติจริงได้/ไม่สมเหตุสมผล (impractical)"},
+      {q:"Neither the manager nor the employees ______ satisfied with the new policy.", c:["is", "are", "was", "has been"], a:1, e:"ในโครงสร้าง \"Neither... nor...\" กริยาจะผันตามประธานตัวหลังสุด ซึ่งในที่นี้คือ \"the employees\" (พหูพจน์)"},
+      {q:"Not only ______ the exam, but she also scored the highest mark in the class.", c:["she passed", "did she pass", "she had passed", "she passes"], a:1, e:"เมื่อขึ้นต้นประโยคด้วยคำปฏิเสธเน้นย้ำเช่น \"Not only\" จะต้องใช้โครงสร้างการสลับตำแหน่ง (Inversion): Not only + กริยาช่วย + ประธาน + กริยาแท้"},
+      {q:"The scientist was awarded the Nobel Prize for his ______ discoveries in genetic engineering.", c:["superficial", "trivial", "Groundbreaking", "Obsolete"], a:2, e:"Groundbreaking แปลว่า ที่บุกเบิก/ยิ่งใหญ่ ซึ่งเหมาะสมกับเหตุผลที่ได้รับรางวัลโนเบล"},
+      {q:"By the time the train arrives, we ______ at the station for over two hours.", c:["will wait", "will have been waiting", "are waiting", "waited"], a:1, e:"โครงสร้าง \"By the time + Present Simple\" สื่อเหตุการณ์อนาคตที่ดำเนินต่อเนื่องจนถึงจุดหนึ่ง ใช้ Future Perfect Continuous (will have been + V-ing)"},
+      {q:"She insisted that he ______ present at the board meeting.", c:["is", "be", "was", "being"], a:1, e:"เป็นโครงสร้าง Subjunctive Mood หลังกริยาแสดงการขอร้อง/สั่งการ/ยืนยัน (insist that + S + V.infinitive แบบไม่ผัน) จึงใช้ \"be\""},
+      {q:"The new environmental regulation aims to ______ carbon emissions by 30% before 2030.", c:["mitigate", "deteriorate", "Exacerbate", "Elevate"], a:0, e:"Mitigate แปลว่า บรรเทา/ลดลง ซึ่งตรงกับเป้าหมายในการลดการปล่อยคาร์บอน (Exacerbate = ทำให้แย่ลง)"},
+      {q:"Despite ______ heavily, they decided to continue their outdoor hiking trip.", c:["it rained", "raining", "of rain", "it was raining"], a:1, e:"คำบุพบท \"Despite\" หรือ \"In spite of\" จะต้องตามด้วย Gerund (V-ing) หรือคำนามเสมอ ไม่ตามด้วยประโยค (Subject + Verb)"},
+      {q:"The research paper was so ______ that few students could comprehend its main argument.", c:["lucid", "obscure", "Transparent", "Explicit"], a:1, e:"บริบทกล่าวว่ามีนักเรียนน้อยคนจะเข้าใจ (comprehend) สื่อว่ารายงานมีความ \"คลุมเครือ/เข้าใจยาก\" (obscure)"},
+      {q:"Choose the word that is **synonym** to \"meticulous\".", c:["Careless", "Thorough", "Hasty", "Negligent"], a:1, e:"\"Meticulous\" แปลว่า พิถีพิถัน/ละเอียดถี่ถ้วน ซึ่งมีความหมายเดียวกับ \"Thorough\" หรือ \"Painstaking\""},
+      {q:"Choose the word that is **antonym** to \"ephemeral\".", c:["Permanent", "Transient", "Momentary", "Fleeting"], a:0, e:"\"Ephemeral\" แปลว่า ชั่วคราว/อายุสั้น คำตรงข้ามคือ \"Permanent\" แปลว่า ถาวร/ยั่งยืน"},
+      {q:"He spoke so quietly that his words were barely ______.", c:["audible", "edible", "Legible", "Credible"], a:0, e:"Audible แปลว่า สามารถได้ยินได้ (Legible = อ่านออกได้, Credible = น่าเชื่อถือ)"},
+      {q:"The manager recommended ______ the deadline until next Friday to ensure high quality.", c:["to extend", "extending", "extend", "extended"], a:1, e:"คำกริยา \"recommend\" ตามด้วย Gerund (V-ing) เมื่อไม่มีกรรมมารับก่อนหน้า (Recommend + V-ing)"},
+      {q:"If technology continues to evolve rapidly, many traditional jobs ______ extinct.", c:["become", "became", "will become", "would become"], a:2, e:"ประโยคเงื่อนไขแบบที่ 1 (First Conditional) แสดงความเป็นไปได้ในอนาคต โครงสร้าง If + Present Simple, S + will + V.infinitive"},
+      {q:"She works as an overseas consultant, ______ requires her to travel frequently.", c:["that", "who", "which", "where"], a:2, e:"ใช้ Non-defining Relative Clause สรรพนาม \"which\" ละไว้หลังเครื่องหมายจุลภาค (comma) เพื่ออ้างถึงเนื้อหาประโยคหน้าทั้งประโยค"},
+      {q:"The crime rate has dropped significantly, ______ to the new community policing strategies.", c:["owing", "despite", "Regardless", "In addition"], a:0, e:"\"owing to\" แปลว่า เนื่องจาก/เพราะว่า (มีความหมายเหมือนเพราะว่า/due to) ใช้บอกเหตุผล"},
+      {q:"Scarcely had the speaker finished his speech ______ the audience burst into applause.", c:["Than", "When", "Then", "While"], a:1, e:"โครงสร้างคู่คำเชื่อมบอกเวลา \"Scarcely / Hardly... when...\" (หรือ \"No sooner... than...\") แปลว่า ทันทีที่...ก็..."},
+      {q:"Which of the following sentences is grammatically **INCORRECT**?", c:["Every student has to submit their homework today.", "She is one of the girls who is always punctual.", "Neither performance was impressive.", "Information regarding the flight schedule is available online."], a:1, e:"ในสำนวน \"one of the [plural noun] who/that + [plural verb]\" คำกริยาหลัง who ต้องผันเป็นพหูพจน์ตาม \"girls\" จึงต้องแก้เป็น \"who **are** always punctual\""},
+      {q:"The candidate failed to convince the voters because his argument lacked ______.", c:["Coherence", "Ambiguity", "Discrepancy", "Redundancy"], a:0, e:"Coherence แปลว่า ความสอดคล้อง/ความเป็นสัจธรรมสอดคล้องกัน การขาด coherence ทำให้ฟังไม่สมเหตุสมผล"},
+      {q:"A: \"Should we postpone the seminar due to bad weather?\" B: \"I'd rather we ______ it as scheduled.\"", c:["keep", "kept", "have kept", "will keep"], a:1, e:"โครงสร้าง \"would rather (that) + subject + V.2\" ใช้ในการแสดงความปรารถนาในปัจจุบันหรืออนาคตที่ต้องการให้เป็นอีกแบบ"},
+      {q:"The doctor advised the patient to ______ on greasy and sugary foods.", c:["cut down", "Look down", "Put up", "Turn down"], a:0, e:"Cut down (on) เป็นกริยาวลี แปลว่า ลดปริมาณลง (ชี้คำตอบทานอาหารมันและหวานให้น้อยลง)"},
+      {q:"The archaeological findings provided new ______ into ancient Mesoamerican civilization.", c:["Insights", "Outlooks", "Oversights", "Spectacles"], a:0, e:"สำนวน \"provide/gain insight into\" แปลว่า ให้ความเข้าใจลึกซึ้งหรือมุมมองที่ถ่องแท้"},
+      {q:"Having ______ all the requirements, the applicant was called for an interview.", c:["fulfill", "fulfilled", "Fulfilling", "been fulfilled"], a:1, e:"โครงสร้าง Participle Clause (Active): Having + V.3 แสดงเหตุการณ์ที่ประธานทำเสร็จสิ้นสมบูรณ์แล้วจึงทำเหตุการณ์ถัดไป"},
+      {q:"The CEO expressed his confidence ______ the company's long-term growth strategy.", c:["In", "On", "For", "At"], a:0, e:"คำนาม \"confidence\" มักใช้กับบุพบท \"in\" (have confidence in something)"},
+      {q:"His explanation was so ______ that everyone in the room understood the complex theory immediately.", c:["Lucid", "Vague", "Intricate", "Ambiguous"], a:0, e:"Lucid แปลว่า ชัดเจน/เข้าใจง่าย ซึ่งสอดคล้องกับผลลัพธ์ที่ทุกคนเข้าใจทฤษฎีซับซ้อนได้ทันที"},
+      {q:"The local economy heavily relies ______ agriculture and tourism.", c:["At", "On", "With", "To"], a:1, e:"กริยา \"rely\" ต้องใช้คู่กับบุพบท \"on\" หรือ \"upon\" เสมอ (rely on = พึ่งพา)"},
+      {q:"What is the primary purpose of a **thesis statement** in an academic essay?", c:["To provide a summary of the conclusion", "To hook the reader's attention with a story", "To state the main argument or central point of the essay", "To list all the sources used in the research"], a:2, e:"Thesis statement ในความเรียงวิชาการทำหน้าที่ระบุข้อโต้แย้งหลักหรือประเด็นใจความสำคัญของทั้งความเรียง"},
+      {q:"\"It's raining cats and dogs\" is an example of an ______.", c:["Metaphor", "Idiom", "Oxymoron", "Onomatopoeia"], a:1, e:"\"Raining cats and dogs\" เป็นสำนวน (Idiom) หมายถึง ฝนตกหนักมาก"},
+      {q:"The contract will become null and void ______ both parties sign the amendment.", c:["Unless", "Provided", "As long as", "Otherwise"], a:0, e:"\"Unless\" แปลว่า ถ้าไม่... (if not) เหมาะกับบริบทสัญญาจะกลายเป็นโมฆะ \"เว้นแต่/ถ้าหาก...ไม่\" ได้รับการลงนาม"},
+    ],
+    soc: [
+      {q:"หลักอริยสัจ 4 ข้อใดเปรียบได้กับ \"ขั้นการลงมือแก้ไขปัญหา\" ในกระบวนการทางวิทยาศาสตร์?", c:["ทุกข์", "สมุทัย", "นิโรธ", "มรรค"], a:3, e:"ทุกข์ = สภาพปัญหา, สมุทัย = สาเหตุปัญหา, นิโรธ = เป้าหมายการแก้ปัญหา, มรรค = ข้อปฏิบัติ/แนวทางแก้ปัญหา (ลงมือทำ)"},
+      {q:"แนวคิดเรื่อง \"สัญญาประชาคม\" (Social Contract) ที่ส่งผลต่อการปฏิวัติประชาธิปไตยในยุโรปเป็นผลงานของนักปรัชญาคนใด?", c:["จอห์น ล็อก (John Locke) และ ฌอง-ฌาคส์ รุสโซ (Jean-Jacques Rousseau)", "อดัม สมิธ (Adam Smith)", "คาร์ล มากซ์ (Karl Marx)", "มอนเตสเกิยร์ (Montesquieu)"], a:0, e:"รุสโซเสนอทฤษฎีสัญญาประชาคม และล็อกเสนอแนวคิดเรื่องสิทธิธรรมชาติมนุษย์ ซึ่งเป็นรากฐานประชาธิปไตยสมัยใหม่"},
+      {q:"ข้อใดคืออำนาจหน้าที่สำคัญของ \"ศาลรัฐธรรมนูญ\" ไทย?", c:["พิจารณาคดีอาญาของผู้ดำรงตำแหน่งทางการเมือง", "วินิจฉัยว่าร่างพระราชบัญญัติขัดหรือแย้งต่อรัฐธรรมนูญหรือไม่", "ตัดสินข้อพิพาททางปกครองระหว่างหน่วยงานรัฐกับเอกชน", "ไต่สวนคดีทุจริตประผิดมิชอบของข้าราชการชั้นผู้ใหญ่"], a:1, e:"ศาลรัฐธรรมนูญมีหน้าที่หลักในการพิทักษ์ความเป็นกฎหมายสูงสุดของรัฐธรรมนูญ วินิจฉัยความชอบด้วยรัฐธรรมนูญของกฎหมายและร่างกฎหมาย"},
+      {q:"ในระบบเศรษฐกิจแบบทุนนิยม (Capitalism) กลไกใดทำหน้าที่ในการจัดสรรทรัพยากรและกำหนดราคาสินค้า?", c:["คณะกรรมการวางแผนจากรัฐบาลกลาง", "กลไกราคา (Demand and Supply)", "การสุ่มจับสลาก", "การควบคุมของสหภาพแรงงาน"], a:1, e:"ระบบทุนนิยมให้เสรีภาพแก่เอกชน ระบบตลาดดำเนินไปด้วย \"มือที่มองไม่เห็น\" (Invisible Hand) หรือกลไกราคาในการจัดสรรทรัพยากร"},
+      {q:"อัตราดอกเบี้ยนโยบายที่เพิ่มขึ้นโดยธนาคารแห่งประเทศไทย มุ่งผลลัพธ์ทางเศรษฐกิจในข้อใด?", c:["กระตุ้นการลงทุนของภาคเอกชน", "แก้ไขปัญหาภาวะเงินเฟ้อสูง", "เพิ่มปริมาณเงินหมุนเวียนในระบบเศรษฐกิจ", "ลดการออมเงินของประชาชน"], a:1, e:"การขึ้นอัตราดอกเบี้ยนโยบายเป็นการดำเนินนโยบายการเงินแบบตึงตัว เพื่อชะลอการกู้ยืม การใช้จ่าย และลดความร้อนแรงของเงินเฟ้อ"},
+      {q:"เหตุการณ์ \"ปฏิวัติอุตสาหกรรม\" (Industrial Revolution) ครั้งแรกเกิดขึ้นในประเทศใด และเริ่มจากอุตสาหกรรมประเภทใด?", c:["ฝรั่งเศส - อุตสาหกรรมน้ำมัน", "สหรัฐอเมริกา - อุตสาหกรรมรถยนต์", "สหราชอาณาจักร (อังกฤษ) - อุตสาหกรรมสิ่งทอ", "เยอรมนี - อุตสาหกรรมเคมี"], a:2, e:"การปฏิวัติอุตสาหกรรมเริ่มขึ้นในอังกฤษช่วงกลางศตวรรษที่ 18 โดยใช้เครื่องจักรไอน้ำในอุตสาหกรรมสิ่งทอเป็นลำดับแรก"},
+      {q:"ระบบการปกครองแบบจตุสดมภ์ (เวียง วัง คลัง นา) ถูกปฏิรูปครั้งใหญ่เปลี่ยนเป็นระบบกระทรวงในรัชสมัยใด?", c:["พระบาทสมเด็จพระจอมเกล้าเจ้าอยู่หัว (รัชกาลที่ 4)", "พระบาทสมเด็จพระจุลจอมเกล้าเจ้าอยู่หัว (รัชกาลที่ 5)", "พระบาทสมเด็จพระปกเกล้าเจ้าอยู่หัว (รัชกาลที่ 7)", "จอมพล ป. พิบูลสงคราม"], a:1, e:"รัชกาลที่ 5 ทรงปฏิรูปการบริหารราชการแผ่นดิน พ.ศ. 2435 ยกเลิกจตุสดมภ์และจัดตั้ง 12 กระทรวงขึ้นบริหารแบบอารยประเทศ"},
+      {q:"สนธิสัญญาเบาว์ริง (Bowring Treaty) พ.ศ. 2398 ส่งผลกระทบที่สำคัญที่สุดต่อเศรษฐกิจไทยอย่างไร?", c:["เปลี่ยนโครงสร้างเศรษฐกิจไทยจากแบบพึ่งพาตนเองเป็นระบบการค้าเสรีสากล", "ทำให้ไทยผูกขาดการค้าขายกับจีนเพียงประเทศเดียว", "จัดตั้งธนาคารแห่งแรกของประเทศไทย", "ยกเลิกการใช้เงินพดด้วงและเปลี่ยนมาใช้เงินเหรียญทองคำ"], a:0, e:"สนธิสัญญาเบาว์ริงยกเลิกระบบผูกขาดการค้าของพระคลังสินค้า เปิดการค้าเสรีกับอังกฤษ นำข้าวไทยเข้าสู่ระบบตลาดโลก"},
+      {q:"เส้นร่องมรสุมหรือเส้นความกดอากาศต่ำที่พาดผ่านประเทศไทย ส่งผลให้เกิดฤดูกาลและสภาพอากาศแบบใด?", c:["หนาวจัดและหิมะตก", "ฝนตกชุกชุ่มชื้น", "ลมพัดแรงแปรปรวนแต่ไม่มีฝน", "แห้งแล้งและหนาวเย็น"], a:1, e:"ร่องความกดอากาศต่ำ (ITCZ) นำพาอากาศร้อนชื้นยกตัว เกิดเป็นเมฆและฝนตกชุกบริเวณที่ร่องพาดผ่าน"},
+      {q:"ภูมิภาคใดของโลกที่ได้รับการขนานนามว่าเป็น \"วงแหวนแห่งไฟ\" (Ring of Fire) ซึ่งพบแผ่นดินไหวและภูเขาไฟระเบิดบ่อยที่สุด?", c:["ขอบมหาสมุทรแอตแลนติก", "ขอบมหาสมุทรแปซิฟิก", "ทะเลเมดิเตอร์เรเนียน", "ขอบมหาสมุทรอินเดีย"], a:1, e:"วงแหวนแห่งไฟเป็นแนวขอบมุดตัวของแผ่นเปลือกโลกรอบมหาสมุทรแปซิฟิก มีภูเขาไฟมีพลังมากกว่า $75\\%$ ของโลกและเกิดแผ่นดินไหวบ่อยที่สุด"},
+      {q:"องค์การสหประชาชาติ (UN) มีองค์กรหลักใดทำหน้าที่ดูแลสันติภาพและความมั่นคงระหว่างประเทศ?", c:["สมัชชาใหญ่ (General Assembly)", "คณะรัฐมนตรีความมั่นคง (Security Council)", "ศาลยุติธรรมระหว่างประเทศ (International Court of Justice)", "สภาเศรษฐกิจและสังคม (ECOSOC)"], a:1, e:"คณะรัฐมนตรีความมั่นคงแห่งสหประชาชาติ (UNSC) มีหน้าที่หลักในการรับผิดชอบดูแลและพิทักษ์สันติภาพและความมั่นคงสากล"},
+      {q:"ข้อใดคือคุณลักษณะของ \"สัมมาทิฏฐิ\" ในมรรคมีองค์ 8?", c:["ความเห็นชอบ ความเข้าใจถูกต้องตามความเป็นจริง", "การเจรจาชอบ ไม่พูดเท็จ", "การดำรงชีพชอบ ประกอบอาชีพสุจริต", "การตั้งมั่นจิตชอบ"], a:0, e:"สัมมาทิฏฐิ คือ ข้อแรกของมรรค 8 หมายถึง ความเห็นชอบ ปัญญารู้แจ้งในอริยสัจ 4 และความเข้าใจเรื่องกฎแห่งกรรม"},
+      {q:"การเปลี่ยนแปลงการปกครองของไทยจากระบอบสมบูรณาญาสิทธิราชย์มาเป็นระบอบประชาธิปไตยเกิดขึ้นในวันที่เท่าใด?", c:["24 มิถุนายน พ.ศ. 2475", "10 ธันวาคม พ.ศ. 2475", "14 ตุลา พ.ศ. 2516", "6 ตุลาคม พ.ศ. 2519"], a:0, e:"คณะราษฎรทำการเปลี่ยนแปลงการปกครองเมื่อวันที่ 24 มิถุนายน พ.ศ. 2475 ในรัชสมัยพระบาทสมเด็จพระปกเกล้าเจ้าอยู่หัว (รัชกาลที่ 7)"},
+      {q:"ดรรชนีวัดผลความเจริญเติบโตทางเศรษฐกิจของประเทศในรอบปีที่นิยมใช้กันแพร่หลายที่สุดคือข้อใด?", c:["ผลิตภัณฑ์มวลรวมภายในประเทศ (GDP)", "ดัชนีความสุขสากล (GHI)", "อัตราการว่างงาน (Unemployment Rate)", "ดุลการชำระเงิน (Balance of Payments)"], a:0, e:"GDP (Gross Domestic Product) มูลค่ารวมของสินค้าและบริการขั้นสุดท้ายที่ผลิตได้ภายในประเทศ เป็นตัวชี้นำหลักของขนาดและความเติบโตทางเศรษฐกิจ"},
+      {q:"ข้อใดไม่ใช่ปัจจัยการผลิต (Factors of Production) ทางเศรษฐศาสตร์?", c:["ที่ดิน (Land)", "แรงงาน (Labor)", "เงินทุน/เงินสด (Cash Money)", "การประกอบการ (Entrepreneurship)"], a:2, e:"ในทางเศรษฐศาสตร์ ปัจจัยการผลิตมี 4 ประการ ได้แก่ ที่ดิน, แรงงาน, ทุน (คือ เครื่องจักร/อาคาร ไม่ใช่ตัวเงินสด), และผู้ประกอบการ"},
+      {q:"แผนพัฒนาเศรษฐกิจและสังคมแห่งชาติฉบับที่ 1 ของประเทศไทย เริ่มใช้ใน พ.ศ. ใด?", c:["พ.ศ. 2490", "พ.ศ. 2504", "พ.ศ. 2520", "พ.ศ. 2540"], a:1, e:"แผนพัฒนาเศรษฐกิจแห่งชาติ ฉบับที่ 1 เริ่มใช้ในปี พ.ศ. 2504 ในสมัยรัฐบาลจอมพลสฤษดิ์ ธนะรัชต์ เน้นการสร้างโครงสร้างพื้นฐาน"},
+      {q:"อารยธรรมเมโสโปเตเมียกำเนิดขึ้นในลุ่มแม่น้ำสายใด?", c:["แม่น้ำไนล์", "แม่น้ำไทกริส และ ยูเฟรตีส", "แม่น้ำสินธุ", "แม่น้ำฮวงโห"], a:1, e:"เมโสโปเตเมียแปลว่า \"ดินแดนระหว่างแม่น้ำสองสาย\" คือแม่น้ำไทกริสและแม่น้ำยูเฟรตีส (ปัจจุบันอยู่ในอิรัก)"},
+      {q:"ประมวลกฎหมายฮัมมูราบี (Code of Hammurabi) ของอาณาจักรบาบิโลน มีลักษณะเด่นอย่างไร?", c:["ความเท่าเทียมกันของมนุษย์ทุกคน", "การลงโทษแบบ \"ตาต่อตา ฟันต่อฟัน\" (An eye for an eye)", "การงดเว้นโทษประหารชีวิต", "การใช้คณะลูกขุนตัดสินคดี"], a:1, e:"กฎหมายฮัมมูราบีเน้นความยุติธรรมเชิงตอบแทนอย่างรุนแรงตามหลัก \"ตาต่อตา ฟันต่อฟัน\" ตามชนชั้นของสังคม"},
+      {q:"สงครามเย็น (Cold War) เป็นการต่อสู้ทางอุดมการณ์การเมืองระหว่างสองค่ายอภิมหาอำนาจใด?", c:["สหรัฐอเมริกา (เสรีประชาธิปไตย) กับ สหภาพโซเวียต (คอมมิวนิสต์)", "อังกฤษ กับ เยอรมนี", "สหรัฐอเมริกา กับ จีน", "ฝรั่งเศส กับ รัสเซีย"], a:0, e:"สงครามเย็น (พ.ศ. 2490-2534) คือความขัดแย้งทางอุดมการณ์ สภาวะสงครามตัวแทน และการสะสมนิวเคลียร์ระหว่างขั้วสหรัฐฯ และโซเวียต"},
+      {q:"ข้อใดเป็นปรากฏการณ์เรือนกระจกที่ส่งผลกระทบสะสมให้เกิด \"สภาวะโลกร้อน\" (Global Warming)?", c:["การทำลายชั้นโอโซนโดยสาร CFCs", "การรังสีความร้อนจากดวงอาทิตย์ถูกกักเก็บไว้ในบรรยากาศโดยแก๊สเรือนกระจก", "การที่โลกหมุนรอบตัวเองช้าลง", "การลดลงของปรากฏการณ์สึนามิ"], a:1, e:"แก๊สเรือนกระจก ($CO_2, CH_4$ ฯลฯ) ดูดซับและสะท้อนความร้อนรังสีอินฟราเรดกลับสู่พื้นโลก ไม่ให้ระบายออกสู่อวกาศ"},
+      {q:"พิกัดภูมิศาสตร์ (Geographical Coordinates) ประกอบด้วยค่าสองค่าคือข้อใด?", c:["ทิศเหนือ และ ทิศใต้", "ความสูง และ ความกว้าง", "ละติจูด (Latitude) และ ลองจิจูด (Longitude)", "มาตราส่วน และ สัญลักษณ์"], a:2, e:"พิกัดภูมิศาสตร์บอกตำแหน่งที่ตั้งบนผิวโลกอย่างแม่นยำด้วยจุดตัดของเส้นละติจูด (ขนาน) และเส้นลองจิจูด (เมริเดียน)"},
+      {q:"เวลามาตรฐานสากล (UTC/GMT) กำหนดให้ใช้เส้นเมริเดียนแรกที่ลากผ่านเมืองใดเป็นหลัก?", c:["เมืองปารีส ประเทศฝรั่งเศส", "เมืองกรีนิช กรุงลอนดอน ประเทศสหราชอาณาจักร", "กรุงนิวยอร์ก ประเทศสหรัฐอเมริกา", "กรุงโตเกียว ประเทศญี่ปุ่น"], a:1, e:"เส้นเมริเดียนแรก (Prime Meridian) ที่ลองจิจูด $0^\\circ$ ลากผ่านหอดูดาวหลวงกรีนิช เมืองกรีนิช ประเทศอังกฤษ"},
+      {q:"หากประเทศไทย (ซึ่งใช้เวลา UTC+7) เป็นเวลา 12.00 น. (เที่ยงวัน) เวลาที่เมืองกรีนิชจะเป็นเวลาเท่าใด?", c:["05.00 น.", "19.00 น.", "07.00 น.", "24.00 น."], a:0, e:"ประเทศไทยเร็วกว่ากรีนิช (UTC+0) อยู่ 7 ชั่วโมง ดังนั้น หากไทย 12.00 น. กรีนิชจะเป็น $12 - 7 = 05.00$ น. (ตีห้า)"},
+      {q:"ข้อใดเป็น \"ปัจจัยดึงดูด\" (Pull factor) ที่ทำให้เกิดการย้ายถิ่นฐานของประชากรเข้าสู่เขตเมือง?", c:["ภัยแล้งและพืชผลทางการเกษตรตกต่ำในท้องถิ่น", "โอกาสในการทำงาน โครงสร้างพื้นฐาน และการศึกษาที่ดีกว่า", "สงครามและความขัดแย้งในพื้นที่เดิม", "การถูกเวนคืนที่ดินทำกิน"], a:1, e:"ปัจจัยดึงดูดคือสิ่งดึงดูดใจเชิงบวกในพื้นที่ปลายทาง เช่น งาน การศึกษา สาธารณสุข ส่วนข้อ 1, 3, 4 เป็นปัจจัยผลัก (Push factor)"},
+      {q:"พระพรหม พระวิษณุ (พระนารายณ์) และพระศิวะ รวมเรียกว่า \"ตรีมูรติ\" ในศาสนาใด?", c:["ศาสนาพุทธ", "ศาสนาพราหมณ์-ฮินดู", "ศาสนาคริสต์", "ศาสนาซิกข์"], a:1, e:"ตรีมูรติ คือ เทพเจ้าสูงสุด 3 องค์ในศาสนาพราหมณ์-ฮินดู ได้แก่ พระพรหม (ผู้สร้าง), พระวิษณุ (ผู้ปกป้อง) และพระศิวะ (ผู้ทำลาย)"},
+      {q:"พิธีศีลล้างบาป (Baptism) เป็นศีลศักดิ์สิทธิ์แรกเข้าสู่การเป็นคริสตชนของศาสนาใด?", c:["ศาสนาอิสลาม", "ศาสนาพุทธ", "ศาสนาคริสต์", "ศาสนายูดาห์"], a:2, e:"ศีลล้างบาป หรือ บัพติศมา เป็นศีลศักดิ์สิทธิ์สำคัญในศาสนาคริสต์เพื่อแสดงการรับสัจจะ และได้รับการล้างบาปกำเนิดเข้าเป็นศาสนิกชน"},
+      {q:"ข้อใดจัดเป็นกลุ่ม \"ผู้บริโภคขั้นปฐมภูมิ\" (Primary Consumer) ในสายใยอาหาร?", c:["พืชสีเขียว", "สัตว์กินพืช (เช่น กระต่าย, วัว)", "สัตว์กินเนื้อ (เช่น เสือ, เหยี่ยว)", "จุลินทรีย์ย่อยสลาย"], a:1, e:"ผู้ผลิต = พืช, ผู้บริโภคปฐมภูมิ = สัตว์กินพืช (Herbivore), ผู้บริโภคทุติยภูมิ = สัตว์กินเนื้อที่กินสัตว์กินพืชอีกที"},
+      {q:"การใช้สิทธิ \"ลงประหม่า/ลงมติไม่ไว้วางใจ\" รัฐบาล เป็นบทบาทคานอำนาจของฝ่ายใดในระบบรัฐสภา?", c:["ฝ่ายบริหาร", "ฝ่ายนิติบัญญัติ (รัฐสภา)", "ฝ่ายตุลาการ", "องค์กรอิสระ"], a:1, e:"รัฐสภา (โดยเฉพาะฝ่ายสภาผู้แทนราษฎร) ใช้การเปิดอภิปรายไม่ไว้วางใจเพื่อตรวจสอบและคานอำนาจการบริหารของคณะรัฐมนตรี"},
+      {q:"อนุสัญญาแรมซาร์ (Ramsar Convention) มีวัตถุประสงค์หลักเพื่อการอนุรักษ์สิ่งแวดล้อมประเภทใด?", c:["การลดการปล่อยแก๊สเรือนกระจก", "การคุ้มครองพื้นที่พื้นที่ชุ่มน้ำ (Wetlands)", "การห้ามการค้าสัตว์ป่าสงวนใกล้สูญพันธุ์", "การจัดการขยะพิษข้ามแดน"], a:1, e:"อนุสัญญาแรมซาร์ เป็นข้อตกลงระหว่างประเทศเพื่อการอนุรักษ์และการใช้ประโยชน์จากพื้นที่ชุ่มน้ำอย่างยั่งยืน"},
+      {q:"แนวคิด \"รัฐสวัสดิการ\" (Welfare State) ในประเทศแถบสแกนดิเนเวีย มีลักษณะสำคัญอย่างไร?", c:["จัดเก็บภาษีอัตราต่ำมากเพื่อกระตุ้นให้คนทำงานหนัก", "จัดเก็บภาษีในอัตราก้าวหน้าสูง เพื่อนำมาจัดสรรบริการสังคมและสวัสดิการถ้วนหน้าแก่ประชาชน", "ให้เอกชนเป็นผู้จัดบริการสาธารณสุขและการศึกษาทั้งหมด", "รัฐบาลไม่แทรกแซงความเหลื่อมล้ำทางสังคม"], a:1, e:"โมเดลรัฐสวัสดิการสแกนดิเนเวียเน้นการเก็บภาษีสูงแบบก้าวหน้า เพื่อให้รัฐมีรายได้มาให้บริการการศึกษา สาธารณสุข และบำนาญฟรีแก่ประชาชนทุกคนเท่าเทียมกัน"},
+    ],
+    thai: [
+      {q:"พยัญชนะต้นในข้อใดเป็นอักษรต่ำคู่ทั้งหมด?", c:["ค, ช, ท, พ", "ง, น, ม, ย", "ก, จ, ด, ต", "ข, ฉ, ถ, ผ"], a:0, e:"อักษรต่ำคู่มีคู่เสียงกับอักษรสูง ได้แก่ ค, ค, ฆ, ช, ซ, ฌ, ญ, ฎ, ฏ, ธ, ท, น, พ, ฟ, ภ, ฮ (จำ: พ่อค้าฟันทองซื้อทีละเครื่องบิน)"},
+      {q:"ข้อใดเป็น \"คำเป็น\" ทุกคำ?", c:["แม่ นม ลาว ชาย", "พัก กบ มด นก", "คิด มาก อยาก ได้", "รับ รู้ จาก ใจ"], a:0, e:"คำเป็น คือคำที่ผสมด้วยสระเสียงยาวในแม่ ก กา หรือสะกดด้วยแม่กน, กง, กม, เกย, เกอว (นมขวาง) ข้อ 1 สอดคล้องทั้งหมด"},
+      {q:"ข้อใดแสดงกระบวนการสมาสแบบ \"มีสนธิ\"?", c:["มนุษยศาสตร์", "พุทธกาล", "ภูมิศาสตร์", "ธันวาคม"], a:3, e:"เกิดจากการเชื่อมเสียงของคำบาลี-สันสกฤต \"ธนู\" + \"อาคม\" กลมกลืนเสียงเป็น \"ธันวาคม\""},
+      {q:"ข้อใดเป็น \"ประโยคซ้อน\" (สังกรประโยค) ที่มีคุณประโยคทำหน้าที่ขยายคำนาม?", c:["คนที่ประหยัดย่อมมีความมั่นคงในชีวิต", "เขาลดน้ำหนักโดยการออกกำลังกาย", "พ่อแม่หวังว่าลูกจะประสบความสำเร็จ", "แม้ฝนจะตกหนักเขาก็ยังออกไปทำงาน"], a:0, e:"\"ที่ประหยัด\" เป็นคุณประโยค (มีคำเชื่อม ที่/ซึ่ง/อัน) ทำหน้าที่ขยายประธาน \"คน\""},
+      {q:"คำว่า \"พระบาทสมเด็จพระเจ้าอยู่หัว\" ทรงประชวร ควรใช้คำราชาศัพท์ใดแทนคำว่า \"กินยา\"?", c:["เสวยยา", "เสวยพระโอสถ", "ทรงพระโอสถ", "ฉันพระโอสถ"], a:1, e:"คำราชาศัพท์สำหรับกริยากิน/รับประทาน ยา ใช้คำว่า \"เสวยพระโอสถ\""},
+      {q:"ข้อใดสะกดถูกต้องทุกคำตามพจนานุกรมฉบับราชบัณฑิตยสถาน?", c:["ศิษย์มีครู, พิถีพิถัน, โน้ต", "ผาสุก, กราฟฟิก, มะละกอ", "ศาลาพักกาย, ไอศครีม, อิสรภาพ", "เว็บไซด์, โควต้า, อนุญาติ"], a:0, e:"ข้อ 2 ผิดที่ \"กราฟิก\" (ไม่มี ฟ), ข้อ 3 ผิดที่ \"ไอศกรีม\" (ใช้ ก), ข้อ 4 ผิดที่ \"เว็บไซต์, โควตา, อนุญาต\""},
+      {q:"สำนวนในข้อใดมีความหมายสอดคล้องกับคำว่า \"ก้าวก่ายหน้าที่ของผู้อื่น\"?", c:["ชักใบให้เรือเสีย", "เอาน้ำร้อนลวกขา", "เเกว่งเท้าหาเสี้ยน", "เอามือซุกหีบ"], a:3, e:"\"เอามือซุกหีบ\" หมายถึง การหาเรื่องลำบากใส่ตัวโดยก้าวก่ายหรือเข้าไปยุ่งเกี่ยวกับเรื่องที่ไม่ใช่หน้าที่ของตน"},
+      {q:"ฉันทลักษณ์ของ \"โคลงสี่สุภาพ\" 1 บท บังคับรูปวรรณยุกต์เอกและโทอย่างไร?", c:["เอก 4 โท 7", "เอก 7 โท 4", "เอก 5 โท 6", "เอก 6 โท 5"], a:1, e:"ผังบังคับโคลงสี่สุภาพ 1 บท กำหนดให้มีรูปวรรณยุกต์ \"เอก ๗ โท ๔\" ตำแหน่งคำเอกและโทชัดเจน"},
+      {q:"\"เสียงลือเสียงเล่าอ้าง อันใด พี่เอย / เสียงย่อมยอยศใคร ทั่วหล้า\" คำประพันธ์นี้มาจากวรรณคดีเรื่องใด?", c:["พระอภัยมณี", "ลิลิตพระโล", "ลิลิตตะเลงพ่าย", "ขุนช้างขุนแผน"], a:1, e:"บทความนี้เป็นบทครูของโคลงสี่สุภาพที่ปรากฏในวรรณคดีเรื่อง \"ลิลิตพระโล\""},
+      {q:"ข้อใดไม่ใช่คุณลักษณะของบทความวิชาการ?", c:["มีอ้างอิงแหล่งที่มาของข้อมูลอย่างเป็นระบบ", "ใช้น้ำเสียงสลวย ลึกซึ้ง เน้นการใช้อุปมาอุปไมยกระทบกระเทียบ", "ใช้ภาษาที่เป็นทางการ กระชับ และตรงไปตรงมา", "มีการจัดลำดับความคิดอย่างเป็นระบบและสมเหตุสมผล"], a:1, e:"บทความวิชาการเน้นความถูกต้อง ข้อเท็จจริง และความเป็นอักขระวิธีทางการ ไม่เน้นโวหารวรรณศิลป์เชิงเปรียบเทียบกระทบกระเทียบ"},
+      {q:"ภาพพจน์ประเภท \"โวหารสัทพจน์\" (Onomatopoeia) ปรากฏในข้อใด?", c:["เธองามดั่งดวงจันทร์ในคืนเพ็ญ", "เสียงคลื่นกระทบฝั่งครืนๆ ตลอดคืน", "ก้อนเมฆหลั่งน้ำตาออกมาเป็นสายฝน", "เมืองไทยคือสวรรค์บนดิน"], a:1, e:"สัทพจน์ คือการใช้คำเลียนเสียงธรรมชาติ ในที่นี้คือคำว่า \"ครืนๆ\""},
+      {q:"ข้อใดเป็นความหมายของคำว่า \"อุปมาโวหาร\"?", c:["โวหารที่เน้นการอธิบายขั้นตอนอย่างชัดเจน", "โวหารที่ใช้การเปรียบเทียบเพื่อให้เห็นภาพชัดเจน", "โวหารที่โน้มน้าวใจให้เชื่อถือ", "โวหารที่แสดงอารมณ์โกรธแค้น"], a:1, e:"อุปมาโวหาร คือ การเขียนเปรียบเทียบสิ่งหนึ่งกับอีกสิ่งหนึ่งโดยใช้คำเชื่อมเปรียบเทียบ เพื่อให้ผู้อ่านเห็นภาพตาม"},
+      {q:"โวหารกวีนิพนธ์ใดที่มีลักษณะแบบ \"บุคคลวัต\" (Personification)?", c:["ทะเลกอดรัดทรายด้วยความรัก", "หน้าผากเธอโหนดดังเสี้ยวจันทร์", "เสียงปืนดังปังสะท้านป่า", "เขาแข็งแรงเหมือนมดงาน"], a:0, e:"บุคคลวัต หรือกุมารการคือการนำกิริยาอาการหรือความรู้สึกของมนุษย์ไปใช้กับสิ่งไม่มีชีวิต (ทะเล \"กอดรัด\" ทราย)"},
+      {q:"ข้อใดเป็นระดับภาษาที่เหมาะสำหรับการเสนอโครงการต่อผู้บริหารองค์กร?", c:["ภาษาทางการ", "ภาษาพิธีการ", "ภาษาไม่เป็นทางการ", "ภาษากันเอง"], a:0, e:"การเสนอหนังสือหรือโครงการวิชาการต่อผู้บริหารใช้ \"ภาษาทางการ\" ซึ่งถูกต้องตามหลักภาษา น่าเชื่อถือ แต่ไม่ถึงขั้นพิธีการที่ใช้ในงานพระราชพิธี"},
+      {q:"คำประพันธ์ชนิดใดที่ไม่บังคับสัมผัสนอกระหว่างบท?", c:["กลอนแปด", "กาพย์ยานี 11", "รอยแก้ว", "โคลงสี่สุภาพ"], a:3, e:"โคลงสี่สุภาพบังคับสัมผัสภายในบทอย่างเคร่งครัด แต่ไม่มีข้อบังคับสัมผัสเชื่อมระหว่างบท (สัมผัสนอกบท) เหมือนกลอนหรือกาพย์"},
+      {q:"การฟังหรืออ่านอย่างมี \"วิจารณญาณ\" มีความหมายตรงกับข้อใดมากที่สุด?", c:["เชื่อทันทีเมื่อเห็นว่าผู้พูดเป็นผู้เชี่ยวชาญ", "วิเคราะห์ แยกแยะ ประเมินความน่าเชื่อถืออย่างมีเหตุผลก่อนเชื่อ", "จดจำข้อมูลทั้งหมดไว้โดยไม่ต้องตั้งคำถาม", "เลือกเชื่อเฉพาะข้อมูลที่ตรงกับความเห็นเดิมของตน"], a:1, e:"การใช้วิจารณญาณ คือกระบวนการคิดวิเคราะห์ไตร่ตรอง ตรวจสอบหลักฐานและเจตนา ก่อนจะตัดสินใจเชื่อหรือปฏิเสธ"},
+      {q:"ข้อใดเป็น \"คำซ้ำ\" ที่เปลี่ยนความหมายเป็นพหูพจน์?", c:["สาวๆ บ้านนี้หน้าตาดีทุกคน", "เด็กคนนี้เก่งจริงๆ", "เขาทำตัวดีๆ หน่อย", "พื้นห้องสะอาดกริ๊บๆ"], a:0, e:"คำว่า \"สาวๆ\" เติมไม้ยมกแสดงถึงเด็กสาวหลายคน (พหูพจน์) ต่างจากข้ออื่นที่เป็นการเน้นน้ำเสียงหรือบอกลักษณะ"},
+      {q:"\"มัสยา\" เป็นคำไวพจน์ที่มีความหมายตรงกับข้อใด?", c:["ช้าง", "นก", "ปลา", "เสือ"], a:2, e:"มัสยา (หรือ มัจฉา, มัจฉาชาติ) แปลว่า ปลา (ช้าง = กุญชร, นก = ปักษี, เสือ = พยัคฆ์)"},
+      {q:"ข้อใดเป็นการลงนามท้ายจดหมายลากิจที่ถูกต้องตามหลักสวัสดิการสากลของนักเรียน?", c:["ด้วยความเคารพอย่างสูง", "ด้วยความเคารพอย่างยิ่ง", "ขอแสดงความนับถือ", "โดยความเคารพ"], a:0, e:"คำขึ้นต้นจดหมายถึงครูใช้ \"เรียน...\" คำลงท้ายที่ถูกต้องและสุภาพตามแบบแผนคือ \"ด้วยความเคารพอย่างสูง\""},
+      {q:"วรรณคดีเรื่อง \"มหาเวสสันดรชาดก\" กัณฑ์ใดที่มีชื่อเสียงที่สุดด้านเทคนิคการใช้คำประพันธ์บทรำพันพิลาป (กัณฑ์ที่นางมัทรีตามหาลูก)?", c:["กัณฑ์ทศพร", "กัณฑ์ชูชก", "กัณฑ์มัทรี", "กัณฑ์กุมาร"], a:2, e:"กัณฑ์มัทรีแต่งโดยเจ้าพระยาพระคลัง (หน) เด่นมากด้านการใช้โวหารสลดใจ ความรักของแม่ และการรำพันถึงลูก"},
+      {q:"สำนวน \"เอาทองไปลู่กระเบื้อง\" มีความหมายสอดคล้องกับข้อใด?", c:["เอาสิ่งที่มีค่ามากไปเสี่ยงแลกกับสิ่งไร้ค่า", "ทำความดีโดยหวังผลตอบแทนมหาศาล", "การลงทุนทำธุรกิจโดยไม่ศึกษาข้อมูล", "แกล้งทำตัวร่ำรวยต่อหน้าคนอื่น"], a:0, e:"\"เอาทองไปลู่กระเบื้อง\" หมายถึง การเอาสิ่งสูงค่า สันติ หรือผู้ใหญ่ไปปะทะต่อสู้แลกกับสิ่งที่ไม่มีราคาหรือคนชั้นต่ำ ซึ่งไม่คุ้มค่ากัน"},
+      {q:"\"คำตาย\" ในหลักภาษาไทย ต้องสะกดด้วยมาตราแม่ใดบ้าง?", c:["แม่กน, แม่กง, แม่กม", "แม่กบ, แม่กด, แม่กกา (สระยาว)", "แม่กบ, แม่กด, แม่ก๊ก", "แม่เกย, แม่เกอว, แม่กน"], a:2, e:"คำตายสะกดด้วยแม่ กบ, กด, กบ (ท่อง: กบท) หรือคำที่ผสมสระเสียงสั้นในแม่ ก กา โดยไม่มีตัวสะกด"},
+      {q:"ข้อใดเป็นโครงสร้างบทสัมภาษณ์ที่ดีที่สุด?", c:["บทนำบอกวัตถุประสงค์ -> ตั้งคำถามไล่ลำดับประเด็น -> สรุปขอบคุณ", "สรุปผลทันที -> ถามคำถามส่วนตัว -> จบการสัมภาษณ์", "ถามคำถามยากๆ ทันที -> สรุปบทวิเคราะห์ -> คำถามนำ", "ถามไร้ทิศทาง -> บันทึกเสียง -> สรุปประวัติ"], a:0, e:"โครงสร้างการสัมภาษณ์ที่เป็นระบบ ต้องเริ่มด้วยการเกริ่นวัตถุประสงค์ คำถามเรียงตามลำดับความสำคัญ และปิดด้วยการสรุปพร้อมขอบคุณผู้ให้สัมภาษณ์"},
+      {q:"วรรณคดีเรื่อง \"ตะเลงพ่าย\" มุ่งสดุดีพระเกียรติยศของพระมหากษัตริย์พระองค์ใด?", c:["สมเด็จพระรามาธิบดีที่ 1", "สมเด็จพระนเรศวรมหาราช", "สมเด็จพระนารายณ์มหาราช", "พระบาทสมเด็จพระพุทธยอดฟ้าจุฬาโลกมหาราช"], a:1, e:"ลิลิตตะเลงพ่าย ประพันธ์โดยสมเด็จพระมหาสมณเจ้า กรมพระยาปรมานุชิตชิโนรส มุ่งสรรเสริญพระเกียรติยศสมเด็จพระนเรศวรมหาราชในคราวสงครามยุทธหัตถี"},
+      {q:"ข้อใดเป็นคุณสมบัติที่สำคัญที่สุดของ \"เรียงความวิชาการ\"?", c:["ความใส่อารมณ์สะเทือนใจ", "เอกภาพ สัมพันธภาพ และสารภาพ", "ความยาวไม่ต่ำกว่า 10 หน้า", "การใช้คำราชาศัพท์ตลอดทั้งเรื่อง"], a:1, e:"องค์ประกอบของเรียงความที่ดีประกอบด้วย เอกภาพ (ความเป็นหนึ่งเดียวของประเด็น), สัมพันธภาพ (การเชื่อมโยงความสอดคล้อง) และสารภาพ (การเน้นย้ำสาระสำคัญ)"},
+      {q:"ข้อใดสะกดถูกต้องตามวรรณยุกต์?", c:["กระต่ายตื่นตระหนก", "ผัดไทย", "ก๋วยเตี๋ยว", "ถูกทุกข้อ"], a:3, e:"ทุกข้อสะกดและผันวรรณยุกต์ถูกต้องตามพจนานุกรมฉบับราชบัณฑิตยสถาน (ผัดไทย ใช้ ย สะกด)"},
+      {q:"ข้อใดเป็นประโยคที่ปราศจากคำกำกวม?", c:["คุณครูสั่งให้นักเรียนทำรายงานคนละเล่ม", "ตำรวจจับคนร้ายได้สามคนที่หน้าธนาคาร", "นายแพทย์ประเมินอาการป่วยของผู้ป่วยอย่างละเอียด", "เด็กกินขนมที่แม่ซื้อมาแล้ว"], a:2, e:"ข้อ 3 สื่อความหมายเดียวชัดเจน ส่วนข้ออื่นมีความกำกวม เช่น คนละเล่ม (ทำรวมกันหรือทำแยก), จับคนร้ายได้สามคน (จับได้รวมสาม หรือจับหน้าธนาคาร), ซื้อมาแล้ว (แม่ซื้อมาแล้ว หรือเด็กกินแล้ว)"},
+      {q:"ชนิดของกลอนในข้อใดที่มีบทบาทสำคัญในการแสดงละครรำไทยโบราณ?", c:["กลอนสุภาพ", "กลอนบทละคร", "กลอนเสภา", "กลอนนิทาน"], a:1, e:"กลอนบทละครขึ้นต้นด้วย \"เมื่อนั้น\", \"บัดนั้น\", หรือ \"มาจะกล่าวบทไป\" แต่งขึ้นเพื่อใช้ขับร้องประกอบการเล่นละครรำโดยเฉพาะ"},
+      {q:"ข้อใดเป็นคำพ้องรูป?", c:["เพลา (กาลเวลา) - เพลา (เบาลง)", "กาล - การ", "จันทร์ - จันทน์", "เสาร์ - เสา"], a:0, e:"คำพ้องรูป คือเขียนเหมือนกันแต่อ่านออกเสียงต่างกันและมีความหมายต่างกัน (เพ-ลา / เพลา) ส่วนข้อ 2, 3, 4 เป็นคำพ้องเสียง"},
+      {q:"\"ปากเป็นเอก เลขเป็นโท หนังสือเป็นตรี\" คำว่า \"เลข\" ในที่นี้หมายถึงวิชาความรู้ใดในสมัยโบราณ?", c:["การดูดวงชะตาราศี", "วิชาคิดเลขคำนวณการค้า", "การเขียนยันต์อักขระ", "การร้อยกรองบทกลอน"], a:1, e:"หมายถึง ความสามารถในการเจรจา (ปาก) สำคัญที่สุด รองลงมาคือการคิดคำนวณบัญชี/การค้า (เลข) และการอ่านออกเขียนได้ (หนังสือ)"},
+    ],
+  }
+};
+
+const LEVEL_CONFIG = {
+  junior: { label:'มัธยมต้น',  startSpeed:1.0,  baseAdvance:7, correctBack:11, passiveTick:0.6 },
+  senior: { label:'มัธยมปลาย', startSpeed:1.08, baseAdvance:8, correctBack:10, passiveTick:0.8 },
+};
+
+/* ============================================================
+   STATE
+============================================================ */
+let state = {
+  level: null,
+  proximity: 50,
+  speedMultiplier: 1.0,
+  streak: 0,
+  bestStreak: 0,
+  correctCount: 0,
+  wrongCount: 0,
+  qNum: 1,
+  usedQuestions: {}, // subjectId -> Set of indexes used
+  currentSubject: null,
+  currentQ: null,
+  selectedChoiceIndex: null,
+  gameOver: false,
+  paused: false,     // true ระหว่างอ่านโมดัลความมั่นใจ/ผลลัพธ์ — นาฬิกาจะหยุดเดิน
+  tickHandle: null,
+};
+
+let audioCtx = null, masterGain = null, audioMuted = false, musicInterval = null, musicStep = 0;
+
+/* ============================================================
+   INIT DECOR (stars, skyline, ruins, robot, school)
+============================================================ */
+function buildStars(){
+  const wrap = document.getElementById('stars');
+  for(let i=0;i<60;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*60+'%';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    wrap.appendChild(s);
+  }
+}
+function buildSkyline(){
+  const sky = document.getElementById('skyline');
+  const widths = [40,55,30,70,45,60,35];
+  widths.forEach((w,i)=>{
+    const b = document.createElement('div');
+    b.className='bldg'+(i%3===0?' broken':'');
+    b.style.width = w+'px';
+    b.style.height = (60+ (i%4)*22)+'px';
+    sky.insertBefore(b, sky.firstChild);
+  });
+}
+function ruinSVG(){
+  return `<svg width="70" height="90" viewBox="0 0 70 90">
+    <rect x="10" y="20" width="30" height="70" fill="#2a3557"/>
+    <polygon points="10,20 25,0 40,20" fill="#212b48"/>
+    <rect x="16" y="34" width="8" height="10" fill="#101830"/>
+    <rect x="30" y="34" width="8" height="10" fill="#101830"/>
+    <rect x="45" y="45" width="16" height="45" fill="#232f52"/>
+    <polygon points="0,90 12,55 22,90" fill="#181f38" opacity=".7"/>
+  </svg>`;
+}
+function buildRuins(){
+  document.querySelectorAll('.ruin').forEach(r=> r.innerHTML = ruinSVG());
+}
+function robotSVG(){
+  return `<svg width="120" height="150" viewBox="0 0 120 150">
+    <rect class="leg leg1" x="35" y="105" width="16" height="40" rx="4" fill="#4b5570"/>
+    <rect class="leg leg2 l2" x="69" y="105" width="16" height="40" rx="4" fill="#4b5570"/>
+    <rect x="28" y="55" width="64" height="58" rx="10" class="body-fill" fill="#5c6786"/>
+    <rect x="20" y="60" width="14" height="30" rx="5" fill="#404a68"/>
+    <rect x="86" y="60" width="14" height="30" rx="5" fill="#404a68"/>
+    <rect x="40" y="14" width="40" height="34" rx="8" fill="#6b7694"/>
+    <circle class="glow-eye" cx="52" cy="30" r="5" fill="#E5484D"/>
+    <circle class="glow-eye" cx="68" cy="30" r="5" fill="#E5484D"/>
+    <rect x="55" y="4" width="10" height="12" fill="#8a94ae"/>
+    <circle cx="60" cy="2" r="4" fill="#E5484D"/>
+  </svg>`;
+}
+function schoolSVG(){
+  return `<svg width="160" height="130" viewBox="0 0 160 130">
+    <rect x="20" y="40" width="120" height="80" fill="#c98f3f"/>
+    <polygon points="10,40 80,5 150,40" fill="#8a5a24"/>
+    <rect x="70" y="80" width="24" height="40" fill="#5c3d18"/>
+    <rect x="34" y="55" width="18" height="18" fill="#eaf3ff" opacity=".85"/>
+    <rect x="108" y="55" width="18" height="18" fill="#eaf3ff" opacity=".85"/>
+    <rect x="0" y="118" width="160" height="6" fill="#3a4a72"/>
+    <rect x="4" y="10" width="3" height="30" fill="#ccc"/>
+    <polygon points="7,10 26,16 7,22" fill="#E5484D"/>
+  </svg>`;
+}
+function npcSVG(color){
+  return `<svg width="26" height="46" viewBox="0 0 26 46">
+    <circle cx="13" cy="9" r="7" fill="#f2d3ae"/>
+    <rect x="5" y="17" width="16" height="22" rx="5" fill="${color}"/>
+    <rect x="4" y="38" width="7" height="8" fill="#2b3a5e"/>
+    <rect x="15" y="38" width="7" height="8" fill="#2b3a5e"/>
+  </svg>`;
+}
+function buildRobotAndSchool(){
+  document.getElementById('robot').innerHTML = `<div class="robot-inner" id="robot-inner">${robotSVG()}</div>`;
+  const schoolWrap = document.getElementById('school');
+  schoolWrap.innerHTML = '';
+  const schoolDiv = document.createElement('div');
+  schoolDiv.innerHTML = schoolSVG();
+  schoolWrap.appendChild(schoolDiv);
+  const npcColors = ['#E5484D','#46C98A','#F2B441','#5b8def'];
+  npcColors.forEach((c,i)=>{
+    const n = document.createElement('div');
+    n.className='npc';
+    n.style.right = (6 + i*20)+'px';
+    n.style.animationDelay = (i*0.2)+'s';
+    n.innerHTML = npcSVG(c);
+    document.getElementById('scene').appendChild(n);
+  });
+}
+
+/* ============================================================
+   MATH RENDER (KaTeX)
+============================================================ */
+function escapeHtml(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function renderMath(selector){
+  const el = document.querySelector(selector);
+  if(el && window.renderMathInElement){
+    try{
+      renderMathInElement(el, { delimiters:[{left:'$', right:'$', display:false}], throwOnError:false });
+    }catch(e){}
+  }
+}
+
+/* ============================================================
+   AUDIO ENGINE — synthesized SFX + background music (Web Audio API)
+============================================================ */
+function initAudio(){
+  if(audioCtx) return;
+  try{
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.45;
+    masterGain.connect(audioCtx.destination);
+    startMusic();
+  }catch(e){ /* audio unsupported — fail silently */ }
+}
+
+function toggleMute(){
+  initAudio();
+  audioMuted = !audioMuted;
+  if(masterGain) masterGain.gain.value = audioMuted ? 0 : 0.45;
+  const btn = document.getElementById('mute-btn');
+  if(btn) btn.textContent = audioMuted ? '🔇 ปิดเสียง' : '🔊 เสียง';
+}
+
+function noteFreq(semitoneFromA4){
+  return 440 * Math.pow(2, semitoneFromA4/12);
+}
+
+function playTone(freq, duration, type, gainVal, when){
+  if(!audioCtx || audioMuted) return;
+  when = when || 0;
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.value = freq;
+  const t0 = audioCtx.currentTime + when;
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(gainVal, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+  osc.connect(g); g.connect(masterGain);
+  osc.start(t0);
+  osc.stop(t0 + duration + 0.05);
+}
+
+function playSFX(kind){
+  if(!audioCtx || audioMuted) return;
+  if(kind==='click')   playTone(noteFreq(0), 0.06, 'square', 0.07, 0);
+  if(kind==='correct'){ playTone(noteFreq(3),0.12,'sine',0.18,0); playTone(noteFreq(7),0.14,'sine',0.16,0.08); playTone(noteFreq(12),0.2,'sine',0.15,0.16); }
+  if(kind==='wrong'){ playTone(noteFreq(-5),0.28,'sawtooth',0.15,0); playTone(noteFreq(-9),0.32,'sawtooth',0.13,0.06); }
+  if(kind==='win'){ [0,4,7,12,16].forEach((n,i)=> playTone(noteFreq(n),0.35,'triangle',0.18,i*0.13)); }
+  if(kind==='lose'){ [0,-3,-7,-12].forEach((n,i)=> playTone(noteFreq(n),0.45,'sawtooth',0.15,i*0.16)); }
+}
+
+const MUSIC_BASE = -21; // ~A2 (110Hz) โทนต่ำ ให้ความรู้สึกกดดัน
+const MUSIC_PATTERN = [0,0,3,0,7,5,3,0,10,8,7,5,3,0,-2,0];
+
+function startMusic(){
+  if(musicInterval) return;
+  musicInterval = setInterval(()=>{
+    if(!audioCtx || audioMuted) return;
+    const offset = MUSIC_PATTERN[musicStep % MUSIC_PATTERN.length];
+    playTone(noteFreq(MUSIC_BASE + offset), 0.22, 'triangle', 0.08, 0);
+    if(musicStep % 8 === 0){
+      playTone(noteFreq(MUSIC_BASE + offset + 12), 0.18, 'sine', 0.045, 0.02);
+    }
+    musicStep++;
+  }, 260);
+}
+
+/* ============================================================
+   GAME CLOCK — หุ่นยนต์เดินเข้ามาแบบช้าๆ ต่อเนื่องตามเวลาจริง
+   ไม่ใช่แค่ตอนตอบคำถามเท่านั้น เพื่อสร้างความกดดัน/ตื่นเต้น
+============================================================ */
+function startGameClock(){
+  stopGameClock();
+  state.tickHandle = setInterval(()=>{
+    if(state.paused || state.gameOver) return;
+    const cfg = LEVEL_CONFIG[state.level];
+    // ยิ่งหุ่นยนต์เร่งความเร็ว (speedMultiplier) ยิ่งคืบเข้ามาไวขึ้นแม้ในช่วงที่ผู้เล่นยังลังเล
+    const step = cfg.passiveTick * (0.6 + state.speedMultiplier * 0.4);
+    state.proximity = Math.min(100, state.proximity + step);
+    updateHUD();
+    if(state.proximity >= 100){
+      state.gameOver = true;
+      stopGameClock();
+      document.getElementById('confidence-modal').classList.remove('active');
+      endGame();
+    }
+  }, 2200);
+}
+function stopGameClock(){
+  if(state.tickHandle){ clearInterval(state.tickHandle); state.tickHandle = null; }
+}
+
+/* ============================================================
+   START SCREEN LOGIC
+============================================================ */
+function selectLevel(level){
+  initAudio();
+  playSFX('click');
+  state.level = level;
+  document.getElementById('lvl-junior').classList.toggle('selected', level==='junior');
+  document.getElementById('lvl-senior').classList.toggle('selected', level==='senior');
+  document.getElementById('btn-start').classList.add('ready');
+}
+
+function startGame(){
+  if(!state.level) return;
+  initAudio();
+  playSFX('click');
+  const cfg = LEVEL_CONFIG[state.level];
+  state.proximity = 50;
+  state.speedMultiplier = cfg.startSpeed;
+  state.streak = 0;
+  state.bestStreak = 0;
+  state.correctCount = 0;
+  state.wrongCount = 0;
+  state.qNum = 1;
+  state.usedQuestions = {};
+  state.gameOver = false;
+  state.paused = false;
+
+  document.getElementById('hud-level').textContent = cfg.label;
+  showScreen('screen-game');
+  buildRobotAndSchool();
+  buildSubjectGrid();
+
+  // หุ่นยนต์เริ่มเดินเข้ามาจากนอกฉากแบบช้าๆ ตอนเริ่มเกม
+  const robotEl = document.getElementById('robot');
+  robotEl.style.left = '-22%';
+  robotEl.classList.add('entering');
+  updateHUD();
+  setTimeout(()=> robotEl.classList.remove('entering'), 3300);
+
+  startGameClock();
+  showSubjectPicker();
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ============================================================
+   SUBJECT PICKER
+============================================================ */
+function buildSubjectGrid(){
+  const grid = document.getElementById('subject-grid');
+  grid.innerHTML='';
+  SUBJECTS.forEach(s=>{
+    const btn = document.createElement('button');
+    btn.className='subject-btn';
+    btn.innerHTML = `<div class="icon">${s.icon}</div><div class="name">${s.name}</div>`;
+    btn.onclick = ()=> pickSubject(s.id);
+    grid.appendChild(btn);
+  });
+}
+function showSubjectPicker(){
+  document.getElementById('panel-subjects').style.display='block';
+  document.getElementById('panel-quiz').style.display='none';
+  document.getElementById('result-panel').classList.remove('show');
+  state.paused = false; // นาฬิกาเดินต่อระหว่างเลือกวิชา/อ่านคำถาม เพื่อความกดดันต่อเนื่อง
+}
+
+function pickSubject(subjectId){
+  const pool = QUESTIONS[state.level][subjectId];
+  if(!state.usedQuestions[subjectId]) state.usedQuestions[subjectId] = new Set();
+  let used = state.usedQuestions[subjectId];
+  if(used.size >= pool.length) used.clear(); // reset pool when exhausted
+
+  let idx;
+  do { idx = Math.floor(Math.random()*pool.length); } while(used.has(idx) && used.size < pool.length);
+  used.add(idx);
+
+  state.currentSubject = SUBJECTS.find(s=>s.id===subjectId);
+  state.currentQ = pool[idx];
+  state.selectedChoiceIndex = null;
+
+  renderQuestion();
+}
+
+/* ============================================================
+   QUESTION RENDER
+============================================================ */
+function renderQuestion(){
+  document.getElementById('panel-subjects').style.display='none';
+  document.getElementById('panel-quiz').style.display='block';
+  document.getElementById('result-panel').classList.remove('show');
+  document.getElementById('confirm-row').classList.remove('show');
+
+  const s = state.currentSubject, q = state.currentQ;
+  document.getElementById('quiz-tag').textContent = s.icon + '  ' + s.name;
+  document.getElementById('quiz-q').textContent = q.q;
+
+  const letters = ['ก','ข','ค','ง'];
+  const cont = document.getElementById('quiz-choices');
+  cont.innerHTML='';
+  q.c.forEach((choiceText,i)=>{
+    const b = document.createElement('button');
+    b.className='choice-btn';
+    b.innerHTML = `<span class="letter">${letters[i]}.</span><span>${escapeHtml(choiceText)}</span>`;
+    b.onclick = ()=> chooseAnswer(i);
+    cont.appendChild(b);
+  });
+  renderMath('#panel-quiz');
+}
+
+function chooseAnswer(i){
+  playSFX('click');
+  state.selectedChoiceIndex = i;
+  document.querySelectorAll('.choice-btn').forEach((b,idx)=>{
+    b.classList.toggle('picked', idx===i);
+  });
+  document.getElementById('confirm-row').classList.add('show');
+}
+
+function cancelChoice(){
+  playSFX('click');
+  state.selectedChoiceIndex = null;
+  document.querySelectorAll('.choice-btn').forEach(b=> b.classList.remove('picked'));
+  document.getElementById('confirm-row').classList.remove('show');
+}
+
+function confirmChoice(){
+  if(state.selectedChoiceIndex === null) return;
+  document.querySelectorAll('.choice-btn').forEach(b=>b.setAttribute('disabled','true'));
+  document.getElementById('confirm-row').classList.remove('show');
+  openConfidenceModal();
+}
+
+/* ============================================================
+   CONFIDENCE MODAL
+============================================================ */
+function openConfidenceModal(){
+  state.paused = true; // พักนาฬิการะหว่างตัดสินใจในโมดัล
+  document.getElementById('confidence-modal').classList.add('active');
+}
+function closeConfidenceModal(){
+  document.getElementById('confidence-modal').classList.remove('active');
+}
+
+function confirmConfidence(level){
+  closeConfidenceModal();
+  resolveAnswer(level);
+}
+
+/* ============================================================
+   RESOLVE ANSWER / GAME EFFECTS
+============================================================ */
+function resolveAnswer(confidence){ // confidence: 'low' | 'high'
+  const q = state.currentQ;
+  const correctIdx = q.a;
+  const isCorrect = state.selectedChoiceIndex === correctIdx;
+  const cfg = LEVEL_CONFIG[state.level];
+
+  // highlight choices
+  const btns = document.querySelectorAll('.choice-btn');
+  btns.forEach((b,i)=>{
+    if(i===correctIdx) b.classList.add('correct');
+    if(i===state.selectedChoiceIndex && !isCorrect) b.classList.add('wrong');
+  });
+
+  let resultText = '';
+  const sceneEl = document.getElementById('scene');
+
+  if(isCorrect){
+    state.correctCount++;
+    state.streak++;
+    state.bestStreak = Math.max(state.bestStreak, state.streak);
+
+    let back = cfg.correctBack;
+    let bonusText = '';
+    if(confidence === 'high'){
+      back += 5;
+      bonusText = ' และเพราะคุณมั่นใจมากและตอบถูก จึงผลักหุ่นยนต์ถอยเพิ่มพิเศษ!';
+    }
+    state.proximity = Math.max(0, state.proximity - back);
+    state.speedMultiplier = Math.max(1, state.speedMultiplier - 0.04);
+
+    resultText = `✅ ตอบถูกต้อง! หุ่นยนต์ถูกผลักถอยกลับ ${back} หน่วย${bonusText}`;
+    document.getElementById('result-panel').className='result-panel show good';
+
+    spawnSpark('💥');
+    playSFX('correct');
+  } else {
+    state.wrongCount++;
+    state.streak = 0;
+
+    let advance = Math.round(cfg.baseAdvance * state.speedMultiplier);
+    state.proximity = Math.min(100, state.proximity + advance);
+    let speedGain = confidence === 'high' ? 0.30 : 0.13;
+    state.speedMultiplier += speedGain;
+
+    let confNote = confidence === 'high'
+      ? ' การมั่นใจมากแต่ตอบผิดทำให้หุ่นยนต์เร่งความเร็วขึ้นมาก!'
+      : ' โชคดีที่ความมั่นใจน้อย ความเร็วจึงเพิ่มขึ้นเพียงเล็กน้อย';
+    resultText = `❌ ตอบผิด คำตอบที่ถูกคือ "${q.c[correctIdx]}" หุ่นยนต์เดินเข้ามาอีก ${advance} หน่วย${confNote}`;
+    document.getElementById('result-panel').className='result-panel show bad';
+
+    sceneEl.classList.add('shake');
+    setTimeout(()=>sceneEl.classList.remove('shake'),400);
+    playSFX('wrong');
+  }
+
+  const robotInnerEl = document.getElementById('robot-inner');
+  robotInnerEl.classList.add('stomp');
+  setTimeout(()=>robotInnerEl.classList.remove('stomp'),500);
+
+  document.getElementById('result-text').textContent = resultText;
+  const explainBox = document.getElementById('explain-box');
+  explainBox.innerHTML = `<b>💡 ทำไมถึงตอบข้อนี้:</b> ${escapeHtml(q.e || '')}`;
+  document.getElementById('result-panel').classList.add('show');
+  renderMath('#result-panel');
+
+  state.qNum++;
+  state.paused = true; // หยุดนาฬิการะหว่างอ่านผลลัพธ์
+  updateHUD();
+
+  if(state.proximity<=0 || state.proximity>=100){
+    state.gameOver = true;
+    document.getElementById('btn-next').textContent = 'ดูผลลัพธ์ →';
+  } else {
+    document.getElementById('btn-next').textContent = 'ไปต่อ →';
+  }
+}
+
+function spawnSpark(emoji){
+  const scene = document.getElementById('scene');
+  const robot = document.getElementById('robot');
+  const rect = robot.getBoundingClientRect();
+  const sceneRect = scene.getBoundingClientRect();
+  const s = document.createElement('div');
+  s.className='spark';
+  s.textContent = emoji;
+  s.style.left = (rect.left - sceneRect.left + 40)+'px';
+  s.style.top = '40px';
+  scene.appendChild(s);
+  setTimeout(()=>s.remove(),650);
+}
+
+/* ============================================================
+   HUD + SCENE UPDATE
+============================================================ */
+function updateHUD(){
+  document.getElementById('stat-streak').textContent = state.streak;
+  document.getElementById('stat-speed').textContent = Math.round(state.speedMultiplier*100)+'%';
+  document.getElementById('stat-qnum').textContent = state.qNum;
+  document.getElementById('proximity-fill').style.width = state.proximity+'%';
+
+  // robot position: proximity 0 -> left 4%, proximity 100 -> left 78%
+  const leftPct = 4 + (state.proximity/100)*74;
+  document.getElementById('robot').style.left = leftPct+'%';
+
+  // walking speed animation reflects speedMultiplier — ยิ่งเร็ว ยิ่งก้าวถี่
+  const legs = document.querySelectorAll('.robot .leg');
+  const dur = Math.max(0.35, 1 / state.speedMultiplier);
+  legs.forEach(l=> l.style.animationDuration = dur+'s');
+  const inner = document.getElementById('robot-inner');
+  if(inner) inner.style.animationDuration = dur+'s';
+}
+
+/* ============================================================
+   NEXT ROUND / END GAME
+============================================================ */
+function nextRound(){
+  if(state.gameOver){
+    endGame();
+    return;
+  }
+  showSubjectPicker();
+}
+
+function endGame(){
+  stopGameClock();
+  const win = state.proximity<=0;
+  showScreen('screen-end');
+  document.getElementById('end-emoji').textContent = win ? '🏆' : '💥';
+  document.getElementById('end-title').textContent = win ? 'ปกป้องโรงเรียนสำเร็จ!' : 'โรงเรียนถูกทำลาย...';
+  document.getElementById('end-title').className = 'end-title kanit ' + (win?'win':'lose');
+  document.getElementById('end-sub').textContent = win
+    ? 'ความรู้ของคุณผลักดันหุ่นยนต์ยักษ์ให้ถอยกลับไปได้สำเร็จ นักเรียนและทุกคนหน้าโรงเรียนปลอดภัยแล้ว'
+    : 'หุ่นยนต์เดินทะลุรั้วเข้ามาได้ ลองทบทวนความรู้แล้วกลับมาปกป้องโรงเรียนอีกครั้ง';
+  document.getElementById('end-correct').textContent = state.correctCount;
+  document.getElementById('end-wrong').textContent = state.wrongCount;
+  document.getElementById('end-best-streak').textContent = state.bestStreak;
+}
+
+function restartGame(){
+  stopGameClock();
+  document.getElementById('lvl-junior').classList.remove('selected');
+  document.getElementById('lvl-senior').classList.remove('selected');
+  document.getElementById('btn-start').classList.remove('ready');
+  state.level = null;
+  showScreen('screen-start');
+}
+
+/* ============================================================
+   BOOTSTRAP
+============================================================ */
+buildStars();
+buildSkyline();
+buildRuins();
+</script>
+</body>
+</html>
